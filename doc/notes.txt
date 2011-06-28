@@ -18,6 +18,9 @@ Components:
 
 
 RESEARCH:
+TK ref etc: http://www.pythonware.com/library/tkinter/introduction/tkinter-classes.htm
+
+
 FastStone Imageviewer (Freeware/donationware for non comercial) 
 EXIFToolGUI.
 Image Ingester
