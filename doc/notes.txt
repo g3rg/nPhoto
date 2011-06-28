@@ -1,0 +1,29 @@
+nbPhoto
+-------
+GUI application that allows tagging and commenting of photos, with a focus on being fast and lightweight and to 
+run on netbooks (maybe tablets?), and then at the end of the trip (or day if a professional?) to export to LightRoom 
+or other software on beefier system.
+
+
+Components:
+
+[ ] Import - given a source folder, copy to a new folder in a 'managed' area, verify file copied
+[ ] Review - browse photos (JPEG Thumbnail?), tag photos (IPTC keywords? for JPG, ? for RAW), 
+	comments (JPEG Comments, ? for RAW), view EXIF etc, delete!, autorotate based on EXIF data,
+	
+[ ] Backup - copy all info to X different locations!
+[ ] Export - Lightroom - should hopefully just be copy library to a folder?
+
+
+
+
+RESEARCH:
+FastStone Imageviewer (Freeware/donationware for non comercial) 
+EXIFToolGUI.
+Image Ingester
+PhotoMechanic 
+Adobe DNG Converter? - encapsulates metadata without resorting to sidecar files for CR2
+python-lxml, python-imaging, jhead, exiftran
+
+
+
