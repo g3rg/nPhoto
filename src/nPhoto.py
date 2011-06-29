@@ -3,21 +3,45 @@ Created on 28/06/2011
 
 @author: g3rg
 '''
-from Tkinter import *
+from Tkinter import Tk, Frame, Button, LEFT, Menu
+from nphoto.settings import Settings
 
 class App:
+    settings = Settings()
+    
     def __init__(self, master):
-        frame = Frame(master)
-        frame.pack()
+        self.frame = Frame(master)
+        self.frame.pack()
         
-        self.button = Button(frame, text="QUIT", fg="red", command=frame.quit)
-        self.button.pack(side=LEFT)
+        # build the menu
+        self.menubar = Menu(self.frame)
+        self.actionmenu = Menu(self.menubar, tearoff=0)
         
-        self.hi_there = Button(frame, text="Hello", command=self.say_hi)
-        self.hi_there.pack(side=LEFT)
+        
+        self.actionmenu.add_command(label="Settings", command=self.showSettings)
+        self.actionmenu.add_command(label="Import", command=self.doImport)
+        self.actionmenu.add_command(label="Backup", command=self.doBackup)
+        self.actionmenu.add_command(label="Quit", command=self.quit)
+        
+        self.menubar.add_cascade(label="Actions", menu=self.actionmenu)
+        
+        master.config(menu=self.menubar)
+        
+    def showSettings(self):
+        print "Show settings!"
+        
+    def doImport(self):
+        print "Do Import!"
+        
+    def doBackup(self):
+        print "Do Backup!"
+        
+    def quit(self):
+        self.settings.saveSettings()
+        self.frame.quit()
         
     def say_hi(self):
-        print "hi there, everyone!"
+        print "Dir is: " + self.settings.import_dir
 
 
 def doMain():
