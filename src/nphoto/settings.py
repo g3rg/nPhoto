@@ -13,8 +13,8 @@ class Settings(object):
     '''
     classdocs
     '''
-    optionKeys = ['import_dir', 'bkup_dirs', 'width', 'height']
-    guisettingKeys = ['import_dir', 'bkup_dirs']
+    optionKeys = ['import_dir', 'bkup_dirs', 'library_dir', 'width', 'height']
+    guisettingKeys = ['import_dir', 'bkup_dirs', 'library_dir']
 
     def __init__(self):
         '''

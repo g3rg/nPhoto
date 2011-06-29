@@ -24,7 +24,8 @@ class SettingsDialog(Dialog):
                 Label(master, text=option).grid(row=x)
                 e = Entry(master)
                 e.grid(row=x, column=1)
-                e.insert(0,getattr(self.settings, option))
+                if hasattr(self.settings, option):
+                    e.insert(0,getattr(self.settings, option))
                 self.fields[option] = e
                 x = x + 1
                 

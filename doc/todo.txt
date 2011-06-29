@@ -1,8 +1,12 @@
 [x] handle 'X' quitting on main window
 [x] remember window width / height!
-[ ] create settings dialog shell and show
-[ ] add settings
-	[ ] import dir
-	[ ] list of backup dirs
+[x] create settings dialog shell and show
+[x] add settings
+	[x] import dir
+	[x] list of backup dirs
+	[x] library directory
+	
+[ ] Do Import!
+
 
 	
