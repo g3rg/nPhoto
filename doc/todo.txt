@@ -7,6 +7,19 @@
 	[x] library directory
 	
 [ ] Do Import!
+        
+        # make sure we have a library folder
+        # make sure we have an import folder
+        # check for duplicates?
+        # copy all non duplicates
+        # verify they have been copied
 
+[ ] Do Backup!
+        
+        # make sure we have a library folder
+        # make sure we have at least one backup folder
+        # make sure backup folders are valid
+        # check if bkup folders are empty!
+        # copy library folder to bkup folders!
 
 	

@@ -71,9 +71,13 @@ class App:
         
     def doImport(self):
         print "Do Import!"
+
+        
         
     def doBackup(self):
         print "Do Backup!"
+
+        
         
     def quit(self):
         self.settings.width=self.frame.master.winfo_width()
