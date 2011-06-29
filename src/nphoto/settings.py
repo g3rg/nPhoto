@@ -13,7 +13,8 @@ class Settings(object):
     '''
     classdocs
     '''
-    optionKeys = ['import_dir', 'bkup_dirs']
+    optionKeys = ['import_dir', 'bkup_dirs', 'width', 'height']
+    guisettingKeys = ['import_dir', 'bkup_dirs']
 
     def __init__(self):
         '''
@@ -23,26 +24,21 @@ class Settings(object):
 
 
     def initEmptySettings(self):
-        self.options = {}
         for option in self.optionKeys:
-            self.options[option] = ""
+            setattr(self, option, "")
         
-    def setOptionFields(self):
-        for option in self.optionKeys:
-            if option in self.options:
-                setattr(self, option, self.options[option])
-            else:
-                setattr(self, option, "")
-        
-    def saveSettings(self):
+       
+    def saveSettings(self, frame=None):
         f = open(FILENAME,'w')
-        for option in self.options:
-            f.write(option + OPTION_CHAR + self.options[option] + "\n")
+        for option in self.optionKeys:
+            if hasattr(self, option):
+                f.write(option + OPTION_CHAR + str(getattr(self, option)) + "\n")
+        
+        # f.write("mainwindowwidth" + OPTION_CHAR + frame.)
         
         f.close()
 
     def parseConfig(self):
-        self.options = {}
         try:
             f = open(FILENAME)
         
@@ -54,12 +50,9 @@ class Settings(object):
                     option, value = line.split(OPTION_CHAR,1)
                     option = option.strip()
                     value = value.strip()
-                    self.options[option] = value
+                    setattr(self, option, value)
+                    
             f.close()
         except: 
             self.initEmptySettings()
             self.saveSettings()
-            
-            
-        self.setOptionFields()
-                
