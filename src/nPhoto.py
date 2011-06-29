@@ -73,8 +73,6 @@ class App:
         settingsDialog = SettingsDialog(self.frame.master, self.settings)
         
     def doImport(self):
-        print "Do Import!"
-        # make sure we have a library folder
         if not hasattr(self.settings,  'library_dir') or self.settings.library_dir in (None,  ''):
             tkMessageBox.showerror("Import Failed",  message="You need to specify a library directory in your settings")
             return
@@ -94,22 +92,43 @@ class App:
             tkMessageBox.showerror("Import Failed", message="Your import directory and library directory can not be the same")
             return
 
-        # check for duplicates?
         numTotal = 0
         numDuplicates = 0
-        
+
         tkMessageBox.showinfo("Import",  message="DUPLICATE TEST NOT IMPLEMENTED YET!")
-        
-        if tkMessageBox.askyesno("Import",  message="Out of %d photos found, %d look to be duplicates. Continue with import?" % (numTotal,  numDuplicates)):
+        for f in os.listdir(importFrom):
+            print f
+            # is it a directory? if so RECURSE!
+            # is it a JPEG?
+            # is it a RAW file?
+            # settings for types of files to care about?
             
-            pass
+            
+        if tkMessageBox.askyesno("Import",  message="Out of %d photos found, %d look to be duplicates. Continue with import?" % (numTotal,  numDuplicates)):
             # copy all non duplicates
             # verify they have been copied
+            # check for duplicates?
+            pass
+        
         
         
     def doBackup(self):
-        print "Do Backup!"
+        if not hasattr(self.settings,  'library_dir') or self.settings.library_dir in (None,  ''):
+            tkMessageBox.showerror("Backup Failed",  message="You need to specify a library directory in your settings")
+            return
+        if not os.path.exists(self.settings.library_dir) or os.path.isfile(self.settings.library_dir):
+            tkMessageBox.showerror("Backup Failed", message="The library directory in your settings either doesn't exist, or its not a directory")
+            return        
+        
+        
+        if not hasattr(self.settings,  'bkup_dirs') or self.settings.bkup_dirs in (None,  ''):
+            tkMessageBox.showerror("Backup Failed",  message="You need to specify at least one backup directory in your settings")
+            return
 
+        for path in self.settings.bkup_dirs.split(","):
+            if not os.path.exists(path.strip()) or os.path.isfile(path.strip()):
+                tkMessageBox.showerror("Backup Failed", message="The backup directory <%s> in your settings either doesn't exist, or its not a directory" % (path))
+                return
         
         
     def quit(self):

@@ -15,11 +15,10 @@
         [ ] verify they have been copied
 
 [ ] Do Backup!
-        
-        # make sure we have a library folder
-        # make sure we have at least one backup folder
-        # make sure backup folders are valid
-        # check if bkup folders are empty!
+        [x] make sure we have a library folder
+        [x] make sure we have at least one backup folder
+        [x] make sure backup folders are valid
+        # check if bkup folders are empty?
         # copy library folder to bkup folders!
 
 	
