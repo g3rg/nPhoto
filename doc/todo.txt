@@ -5,14 +5,14 @@
 	[x] import dir
 	[x] list of backup dirs
 	[x] library directory
-	
+[x] Window title
+
 [ ] Do Import!
-        
-        # make sure we have a library folder
-        # make sure we have an import folder
-        # check for duplicates?
-        # copy all non duplicates
-        # verify they have been copied
+        [x] make sure we have a library folder
+        [x] make sure we have an import folder
+        [ ] check for duplicates?
+        [ ] copy all non duplicates
+        [ ] verify they have been copied
 
 [ ] Do Backup!
         

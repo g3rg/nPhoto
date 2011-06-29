@@ -13,8 +13,8 @@ class Settings(object):
     '''
     classdocs
     '''
-    optionKeys = ['import_dir', 'bkup_dirs', 'library_dir', 'width', 'height']
-    guisettingKeys = ['import_dir', 'bkup_dirs', 'library_dir']
+    optionKeys = ['bkup_dirs', 'library_dir', 'width', 'height']
+    guisettingKeys = ['bkup_dirs', 'library_dir']
 
     def __init__(self):
         '''
@@ -27,6 +27,8 @@ class Settings(object):
         for option in self.optionKeys:
             setattr(self, option, "")
         
+        self.width=600
+        self.height=400
        
     def saveSettings(self, frame=None):
         f = open(FILENAME,'w')

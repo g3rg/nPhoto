@@ -4,8 +4,11 @@ Created on 28/06/2011
 @author: g3rg
 '''
 from Tkinter import Tk, Frame, Menu, Label, Entry
+import tkMessageBox
+import tkFileDialog
 from nphoto.settings import Settings
 from nphoto.ui import Dialog
+import os
 
 app = None
         
@@ -71,7 +74,37 @@ class App:
         
     def doImport(self):
         print "Do Import!"
+        # make sure we have a library folder
+        if not hasattr(self.settings,  'library_dir') or self.settings.library_dir in (None,  ''):
+            tkMessageBox.showerror("Import Failed",  message="You need to specify a library directory in your settings")
+            return
+        if not os.path.exists(self.settings.library_dir) or os.path.isfile(self.settings.library_dir):
+            tkMessageBox.showerror("Import Failed", message="The library directory in your settings either doesn't exist, or its not a directory")
+            return
+            
+        importFrom = tkFileDialog.askdirectory()
+        if importFrom in (None,  ''):
+            return
+        
+        if not os.path.exists(importFrom) or os.path.isfile(importFrom):
+            tkMessageBox.showerror("Import Failed", message="The import directory either doesn't exist, or is not a directory")
+            return
 
+        if importFrom == self.settings.library_dir:
+            tkMessageBox.showerror("Import Failed", message="Your import directory and library directory can not be the same")
+            return
+
+        # check for duplicates?
+        numTotal = 0
+        numDuplicates = 0
+        
+        tkMessageBox.showinfo("Import",  message="DUPLICATE TEST NOT IMPLEMENTED YET!")
+        
+        if tkMessageBox.askyesno("Import",  message="Out of %d photos found, %d look to be duplicates. Continue with import?" % (numTotal,  numDuplicates)):
+            
+            pass
+            # copy all non duplicates
+            # verify they have been copied
         
         
     def doBackup(self):
@@ -84,12 +117,11 @@ class App:
         self.settings.height=self.frame.master.winfo_height()
         self.settings.saveSettings()
         self.frame.quit()
-        
-    def say_hi(self):
-        print "Dir is: " + self.settings.import_dir
+
 
 def doMain():
     root = Tk()
+    root.title('nPhoto')
     app = App(root)
     root.mainloop()
     
