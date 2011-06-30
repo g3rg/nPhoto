@@ -26,20 +26,21 @@
         [x] copy library folder to bkup folders!
 
 [ ] Review 
-    [ ] Browser
-        [ ] Tree control of album hierarchy?
-		[ ] Thumbnails - 3 x 3? configurable?
-		[ ] autorotate based on EXIF data
-		[ ] next / prev page buttons
-		[ ] multi-select
-		[ ] delete selected		
-	
 	[ ] View individual photo
 		[ ] autorotate based on EXIF data,
 		[ ] next / prev image
 		[ ] delete
 		[ ] edit keywords - sidecar
 		[ ] edit comment - sidecar
+
+    [ ] Browser
+        [ ] Tree control of album hierarchy?
+		[ ] Thumbnails - 3 x 3? configurable?
+		[ ] next / prev page buttons
+		[ ] multi-select
+		[ ] delete selected		
+		[ ] autorotate based on EXIF data
+	
         
 	[ ] searching! - build XML library? sqllite?
 
