@@ -10,7 +10,6 @@ Components:
 [ ] Import - given a source folder, copy to a new folder in a 'managed' area, verify file copied
 [ ] Review - browse photos (JPEG Thumbnail?), tag photos (IPTC keywords? for JPG, ? for RAW), 
 	comments (JPEG Comments, ? for RAW), view EXIF etc, delete!, autorotate based on EXIF data,
-	
 [ ] Backup - copy all info to X different locations!
 [ ] Export - Lightroom - should hopefully just be copy library to a folder?
 

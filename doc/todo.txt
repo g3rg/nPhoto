@@ -10,15 +10,30 @@
 [ ] Do Import!
         [x] make sure we have a library folder
         [x] make sure we have an import folder
-        [ ] check for duplicates?
-        [ ] copy all non duplicates
-        [ ] verify they have been copied
+        [x] check for duplicates?
+        [x] copy all non duplicates
+        [x] verify they have been copied
+		[ ] create sidecar file - keywords and comments for now
 
 [ ] Do Backup!
         [x] make sure we have a library folder
         [x] make sure we have at least one backup folder
         [x] make sure backup folders are valid
-        # check if bkup folders are empty?
-        # copy library folder to bkup folders!
+        [ ] check if bkup folders are empty?
+        [ ] copy library folder to bkup folders!
 
-	
+[ ] Review 
+	[ ] Browse photos (JPEG Thumbnail?)
+	[ ] View individual photo
+		[ ] autorotate based on EXIF data,
+	[ ] delete
+	[ ] tag photos (IPTC keywords? for JPG, ? for RAW) 
+		[ ] SIDECAR FILES for first version 
+	[ ] comments (JPEG Comments, ? for RAW) 
+		[ ] in sidecar file as well
+	[ ] display EXIF
+	[ ] searching! - build XML library? sqllite?
+
+[ ] IPTC keywords
+[ ] JPEG comments
+[ ] RAW sidecar files?

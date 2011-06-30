@@ -6,9 +6,12 @@ Created on 28/06/2011
 from Tkinter import Tk, Frame, Menu, Label, Entry
 import tkMessageBox
 import tkFileDialog
+
+import os
+import shutil
+
 from nphoto.settings import Settings
 from nphoto.ui import Dialog
-import os
 
 app = None
         
@@ -80,7 +83,11 @@ class App:
             tkMessageBox.showerror("Import Failed", message="The library directory in your settings either doesn't exist, or its not a directory")
             return
             
-        importFrom = tkFileDialog.askdirectory()
+        if not self.settings.file_extensions or self.settings.file_extensions in (None, ''):
+            tkMessageBox.showerror("Import Failed", message="You need to specify file extensions to manage in your settings")
+            return
+
+        importFrom = tkFileDialog.askdirectory(initialdir=self.settings.last_import_dir,title="Import Source")
         if importFrom in (None,  ''):
             return
         
@@ -92,24 +99,81 @@ class App:
             tkMessageBox.showerror("Import Failed", message="Your import directory and library directory can not be the same")
             return
 
-        numTotal = 0
-        numDuplicates = 0
-
-        tkMessageBox.showinfo("Import",  message="DUPLICATE TEST NOT IMPLEMENTED YET!")
-        for f in os.listdir(importFrom):
-            print f
-            # is it a directory? if so RECURSE!
-            # is it a JPEG?
-            # is it a RAW file?
-            # settings for types of files to care about?
-            
-            
-        if tkMessageBox.askyesno("Import",  message="Out of %d photos found, %d look to be duplicates. Continue with import?" % (numTotal,  numDuplicates)):
-            # copy all non duplicates
-            # verify they have been copied
-            # check for duplicates?
-            pass
+        paths = self.buildFileList(importFrom)
+        numTotal = len(paths)
         
+        nonDupes = self.removeDuplicates(paths, importFrom)
+        numDuplicates = numTotal - len(nonDupes)
+        
+        if tkMessageBox.askyesno("Import",  message="Out of %d photos found, %d look to be duplicates. Continue with import?" % (numTotal,  numDuplicates)):
+            self.settings.last_import_dir = importFrom
+            self.settings.saveSettings()
+            
+            for path in nonDupes:
+                # copy the file
+                dest = self.buildLibPath(importFrom, path)
+                self.copyFileIncludingDirectories(path, dest)
+                # TODO Handle copy failure exceptions!
+                
+                # verify the file is there
+                if not os.path.exists(dest):
+                    tkMessageBox.showerror("Import Failed", "The file <%s> was not imported properly, aborting import" % (path))
+                    return
+
+                # create sidecar file
+                # read info from file and populate sidecar
+                # add file info to DB
+                pass
+            
+            tkMessageBox.showinfo("Import", message="Import completed")
+            #verify all files again?
+
+    def copyFileIncludingDirectories(self, src, dest):
+        dirs = dest.split(os.sep)
+        dirs = dirs[0:len(dirs)-1]
+        d = ""
+        for dir in dirs:
+            d = d + dir + os.sep
+            if not os.path.exists(d):
+                os.mkdir(d)
+        
+        shutil.copyfile(src, dest)
+        pass
+    
+    def buildLibPath(self, importFrom, path):
+        relPath = path[len(importFrom):]
+        libPath = self.settings.library_dir + os.sep + relPath
+        
+        return libPath
+        
+    def removeDuplicates(self, paths, importFrom):
+        nonDupes = []
+        
+        for path in paths:
+            libPath = self.buildLibPath(importFrom, path)
+            if not os.path.exists(libPath):
+                nonDupes.append(path)
+        
+        return nonDupes
+        
+    def isImageFile(self, filepath):
+        extensionList = self.settings.file_extensions.split(",")
+        for extension in extensionList:
+            if filepath.upper().endswith(extension.upper()):
+                return True
+        return False
+        
+    def buildFileList(self, importFrom):
+        paths = []
+        for f in os.listdir(importFrom):
+            fullpath = importFrom + os.sep + f
+            
+            if not os.path.isfile(fullpath):
+                paths.extend(self.buildFileList(fullpath))
+            else:
+                if self.isImageFile(fullpath):
+                    paths.append(fullpath)
+        return paths
         
         
     def doBackup(self):
@@ -129,6 +193,8 @@ class App:
             if not os.path.exists(path.strip()) or os.path.isfile(path.strip()):
                 tkMessageBox.showerror("Backup Failed", message="The backup directory <%s> in your settings either doesn't exist, or its not a directory" % (path))
                 return
+        
+        # shutil.copytree(src, dest)
         
         
     def quit(self):

@@ -13,8 +13,8 @@ class Settings(object):
     '''
     classdocs
     '''
-    optionKeys = ['bkup_dirs', 'library_dir', 'width', 'height']
-    guisettingKeys = ['bkup_dirs', 'library_dir']
+    optionKeys = ['library_dir', 'bkup_dirs', 'file_extensions', 'last_import_dir', 'width', 'height']
+    guisettingKeys = ['library_dir', 'bkup_dirs', 'file_extensions']
 
     def __init__(self):
         '''
@@ -41,9 +41,9 @@ class Settings(object):
         f.close()
 
     def parseConfig(self):
+        self.initEmptySettings()
         try:
             f = open(FILENAME)
-        
             for line in f:
                 if COMMENT_CHAR in line:
                     # split on comment char, keep everything before comment
@@ -54,7 +54,7 @@ class Settings(object):
                     value = value.strip()
                     setattr(self, option, value)
                     
+            # set any missing settings
             f.close()
         except: 
-            self.initEmptySettings()
             self.saveSettings()
