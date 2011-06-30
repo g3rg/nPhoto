@@ -7,7 +7,7 @@
 	[x] library directory
 [x] Window title
 
-[ ] Do Import!
+[x] Do Import!
         [x] make sure we have a library folder
         [x] make sure we have an import folder
         [x] check for duplicates?
@@ -15,8 +15,10 @@
         [x] verify they have been copied
         [x] prompt for comment and keywords on import
 		[x] create sidecar file with comment and keywords
-
-[ ] Do Backup!
+        [ ] import into 'album'? or 'day taken'?
+        [ ] 
+        
+[x] Do Backup!
         [x] make sure we have a library folder
         [x] make sure we have at least one backup folder
         [x] make sure backup folders are valid
@@ -24,24 +26,25 @@
         [x] copy library folder to bkup folders!
 
 [ ] Review 
-	[ ] View individual photo
-		[ ] autorotate based on EXIF data,
-		[ ] next / prev image
-		[ ] delete
-		[ ] edit keywords - sidecar
-		[ ] edit comment - sidecar
-
-	[ ] Browser
+    [ ] Browser
+        [ ] Tree control of album hierarchy?
 		[ ] Thumbnails - 3 x 3? configurable?
 		[ ] autorotate based on EXIF data
 		[ ] next / prev page buttons
 		[ ] multi-select
 		[ ] delete selected		
 	
-	[ ] display EXIF
+	[ ] View individual photo
+		[ ] autorotate based on EXIF data,
+		[ ] next / prev image
+		[ ] delete
+		[ ] edit keywords - sidecar
+		[ ] edit comment - sidecar
+        
 	[ ] searching! - build XML library? sqllite?
 
 [ ] read EXIF on import
 [ ] IPTC keywords
 [ ] JPEG comments
 [ ] RAW sidecar files?
+[ ] display EXIF

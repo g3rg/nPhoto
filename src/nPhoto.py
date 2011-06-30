@@ -54,20 +54,34 @@ class SettingsDialog(Dialog):
 class ImportMetadataDialog(Dialog):
     comment = None
     keywords = None
+    album = None
     okPressed = False
     
     def body(self, master):
-        Label(master, text="Comment").grid(row=0)
+        Label(master, text="Album").grid(row=0)
+        self.album_field = Entry(master)
+        self.album_field.grid(row=0, column=1)
+        Label(master, text="Comment").grid(row=1)
         self.comment_field = Entry(master)
-        self.comment_field.grid(row=0, column=1)
-        Label(master, text="Keywords").grid(row=1)
+        self.comment_field.grid(row=1, column=1)
+        Label(master, text="Keywords").grid(row=2)
         self.keywords_field = Entry(master)
-        self.keywords_field.grid(row=1, column=1)
+        self.keywords_field.grid(row=2, column=1)
 
     def apply(self):
+        self.album = self.album_field.get()
         self.comment = self.comment_field.get()
         self.keywords = self.keywords_field.get()
         self.okPressed = True
+
+
+class LibraryImage:
+    album = None
+    path = None
+    importPath = ''
+    comment = ''
+    keywords = {}
+    #exif
 
 class App:
     settings = Settings()
@@ -92,7 +106,7 @@ class App:
         master.config(menu=self.menubar)
 
         
-        #x = Image.open("c:\\temp\\charlie\\20110302.jpg")
+        #x = Image.open("/home/g3rgz/1228465149000.jpg")
         #x = x.resize((250,250))
         #self.image = ImageTk.PhotoImage(x)
         #self.image_label = Label(self.frame, image=self.image, bd=0)
@@ -145,10 +159,15 @@ class App:
         else:
             comment = ""
 
+        if imd.album and imd.album not in (None,  ''):
+            album = imd.album + os.sep
+        else:
+            album = ''
+
         paths = self.buildFileList(importFrom)
         numTotal = len(paths)
         
-        nonDupes = self.removeDuplicates(paths, importFrom)
+        nonDupes = self.removeDuplicates(paths, importFrom,  album)
         numDuplicates = numTotal - len(nonDupes)
         
         if tkMessageBox.askyesno("Import",  message="Out of %d photos found, %d look to be duplicates. Continue with import?" % (numTotal,  numDuplicates)):
@@ -156,7 +175,7 @@ class App:
             self.settings.saveSettings()
             
             for path in nonDupes:
-                dest = self.buildLibPath(importFrom, path)
+                dest = self.buildLibPath(importFrom, path,  album)
                 self.copyFileIncludingDirectories(path, dest)
                 # TODO Handle copy failure exceptions!
                 
@@ -193,17 +212,17 @@ class App:
         shutil.copyfile(src, dest)
         pass
     
-    def buildLibPath(self, importFrom, path):
+    def buildLibPath(self, importFrom, path,  album):
         relPath = path[len(importFrom):]
-        libPath = self.settings.library_dir + os.sep + relPath
+        libPath = self.settings.library_dir + os.sep + album + relPath
         
         return libPath
         
-    def removeDuplicates(self, paths, importFrom):
+    def removeDuplicates(self, paths, importFrom,  album):
         nonDupes = []
         
         for path in paths:
-            libPath = self.buildLibPath(importFrom, path)
+            libPath = self.buildLibPath(importFrom, path,  album)
             if not os.path.exists(libPath):
                 nonDupes.append(path)
         
