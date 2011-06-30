@@ -4,11 +4,15 @@ Created on 28/06/2011
 @author: g3rg
 '''
 from Tkinter import Tk, Frame, Menu, Label, Entry
+import Image
+import ImageTk
+
 import tkMessageBox
 import tkFileDialog
 
 import os
 import shutil
+import datetime
 
 from nphoto.settings import Settings
 from nphoto.ui import Dialog
@@ -47,16 +51,34 @@ class SettingsDialog(Dialog):
         
         print "Save the settings!"
 
+class ImportMetadataDialog(Dialog):
+    comment = None
+    keywords = None
+    okPressed = False
+    
+    def body(self, master):
+        Label(master, text="Comment").grid(row=0)
+        self.comment_field = Entry(master)
+        self.comment_field.grid(row=0, column=1)
+        Label(master, text="Keywords").grid(row=1)
+        self.keywords_field = Entry(master)
+        self.keywords_field.grid(row=1, column=1)
+
+    def apply(self):
+        self.comment = self.comment_field.get()
+        self.keywords = self.keywords_field.get()
+        self.okPressed = True
+
 class App:
     settings = Settings()
     
     def __init__(self, master):
         master.config()
+
         
         self.frame = Frame(master, width=self.settings.width, height=self.settings.height)
-        self.frame.pack()
-        
-        # build the menu
+
+
         self.menubar = Menu(self.frame)
         self.actionmenu = Menu(self.menubar, tearoff=0)
         
@@ -68,6 +90,15 @@ class App:
         self.menubar.add_cascade(label="Actions", menu=self.actionmenu)
         master.protocol("WM_DELETE_WINDOW", self.handleClose)
         master.config(menu=self.menubar)
+
+        
+        #x = Image.open("c:\\temp\\charlie\\20110302.jpg")
+        #x = x.resize((250,250))
+        #self.image = ImageTk.PhotoImage(x)
+        #self.image_label = Label(self.frame, image=self.image, bd=0)
+        #self.image_label.pack()
+        
+        self.frame.pack()
         
     def handleClose(self):
         self.quit()
@@ -99,6 +130,21 @@ class App:
             tkMessageBox.showerror("Import Failed", message="Your import directory and library directory can not be the same")
             return
 
+        imd = ImportMetadataDialog(self.frame.master)
+        
+        if not imd.okPressed:
+            return
+        
+        if imd.keywords and imd.keywords not in (None, ''):
+            keywords = imd.keywords
+        else:
+            keywords = ""
+
+        if imd.comment and imd.comment not in (None, ''):
+            comment = imd.comment
+        else:
+            comment = ""
+
         paths = self.buildFileList(importFrom)
         numTotal = len(paths)
         
@@ -110,23 +156,30 @@ class App:
             self.settings.saveSettings()
             
             for path in nonDupes:
-                # copy the file
                 dest = self.buildLibPath(importFrom, path)
                 self.copyFileIncludingDirectories(path, dest)
                 # TODO Handle copy failure exceptions!
                 
-                # verify the file is there
                 if not os.path.exists(dest):
                     tkMessageBox.showerror("Import Failed", "The file <%s> was not imported properly, aborting import" % (path))
                     return
 
-                # create sidecar file
-                # read info from file and populate sidecar
+                self.buildSideCarFile(path, dest, comment, keywords)
                 # add file info to DB
-                pass
             
             tkMessageBox.showinfo("Import", message="Import completed")
             #verify all files again?
+
+    def buildSideCarFile(self, path, dest, comments, keywords):
+        sidecarFilePath = dest + os.extsep + "sidecar"
+        f = open(sidecarFilePath, "w")
+        f.write("originalpath=" + path + "\n")
+        f.write("keywords=%s\n" % (keywords))
+        f.write("comment=%s\n" % (comments))
+        f.write("exif:\n")
+        f.close()
+        # read info from file and populate sidecar
+        
 
     def copyFileIncludingDirectories(self, src, dest):
         dirs = dest.split(os.sep)
@@ -189,11 +242,22 @@ class App:
             tkMessageBox.showerror("Backup Failed",  message="You need to specify at least one backup directory in your settings")
             return
 
+        dt = datetime.date.today()
+        bkupDirName = str(dt.year) + str(dt.month) + str(dt.day)
+
         for path in self.settings.bkup_dirs.split(","):
             if not os.path.exists(path.strip()) or os.path.isfile(path.strip()):
                 tkMessageBox.showerror("Backup Failed", message="The backup directory <%s> in your settings either doesn't exist, or its not a directory" % (path))
                 return
         
+            if os.path.exists(path.strip() + os.sep + bkupDirName):
+                tkMessageBox.showerror("Backup Failed", message="There is already a backup for today in a backup directory <%s>" % (path.strip()))
+                return
+        
+        for path in self.settings.bkup_dirs.split(","):
+            shutil.copytree(self.settings.library_dir, path.strip() + os.sep + bkupDirName)
+        
+        tkMessageBox.showinfo("Backup", message="Backup completed!")
         # shutil.copytree(src, dest)
         
         

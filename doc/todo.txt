@@ -13,27 +13,35 @@
         [x] check for duplicates?
         [x] copy all non duplicates
         [x] verify they have been copied
-		[ ] create sidecar file - keywords and comments for now
+        [x] prompt for comment and keywords on import
+		[x] create sidecar file with comment and keywords
 
 [ ] Do Backup!
         [x] make sure we have a library folder
         [x] make sure we have at least one backup folder
         [x] make sure backup folders are valid
-        [ ] check if bkup folders are empty?
-        [ ] copy library folder to bkup folders!
+        [x] check if bkup folders are empty?
+        [x] copy library folder to bkup folders!
 
 [ ] Review 
-	[ ] Browse photos (JPEG Thumbnail?)
 	[ ] View individual photo
 		[ ] autorotate based on EXIF data,
-	[ ] delete
-	[ ] tag photos (IPTC keywords? for JPG, ? for RAW) 
-		[ ] SIDECAR FILES for first version 
-	[ ] comments (JPEG Comments, ? for RAW) 
-		[ ] in sidecar file as well
+		[ ] next / prev image
+		[ ] delete
+		[ ] edit keywords - sidecar
+		[ ] edit comment - sidecar
+
+	[ ] Browser
+		[ ] Thumbnails - 3 x 3? configurable?
+		[ ] autorotate based on EXIF data
+		[ ] next / prev page buttons
+		[ ] multi-select
+		[ ] delete selected		
+	
 	[ ] display EXIF
 	[ ] searching! - build XML library? sqllite?
 
+[ ] read EXIF on import
 [ ] IPTC keywords
 [ ] JPEG comments
 [ ] RAW sidecar files?
