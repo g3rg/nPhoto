@@ -115,18 +115,18 @@ class App:
         master.config(menu=self.menubar)
 
         self.loadAlbums()
-        
-        #x = Image.open("c:\\temp\\charlie\\20110302.jpg")
-        #x = x.resize((250,250))
-        #self.image = ImageTk.PhotoImage(x)
-        #self.image_label = Label(self.frame, image=self.image, bd=0)
-        #self.image_label.pack()
-        
         self.tree = ttk.Treeview(self.frame)
-        
         self.buildAlbumTree()
         self.tree.tag_bind('node', '<<TreeviewSelect>>', self.itemClicked)        
-        self.tree.pack()
+        self.tree.grid(row=0, column=0)
+        
+        self.image = Image.open("c:\\temp\\charlie\\01042011198.jpg")
+        self.image.resize((300,300))
+        self.photo = ImageTk.PhotoImage(self.image)
+        self.imagelabel = Label(self.frame, image=self.photo)
+        self.imagelabel.image = self.photo
+        self.imagelabel.grid(row=0, column=1)
+        #self.imagelabel.pack()
         
         self.frame.pack()
     
@@ -139,10 +139,9 @@ class App:
                 album = self.rootAlbum
             else:
                 album = album.albums[folder]
-                
         
-        if album <> None:
-            tkMessageBox.showinfo("Selection", message="SHOW THE IMAGES FOR ALBUM %s" %(album.name))
+#        if album <> None:
+#            tkMessageBox.showinfo("Selection", message="SHOW THE IMAGES FOR ALBUM %s" %(album.name))
         
     def addAlbumToTree(self, node, album):
         # create the album node
