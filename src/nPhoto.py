@@ -4,6 +4,8 @@ Created on 28/06/2011
 @author: g3rg
 '''
 from Tkinter import Tk, Frame, Menu, Label, Entry
+import ttk
+
 import Image
 import ImageTk
 
@@ -54,30 +56,51 @@ class SettingsDialog(Dialog):
 class ImportMetadataDialog(Dialog):
     comment = None
     keywords = None
+    album = None
     okPressed = False
     
     def body(self, master):
-        Label(master, text="Comment").grid(row=0)
+        Label(master, text="Album").grid(row=0)
+        self.album_field = Entry(master)
+        self.album_field.grid(row=0, column=1)
+        
+        Label(master, text="Comment").grid(row=1)
         self.comment_field = Entry(master)
-        self.comment_field.grid(row=0, column=1)
-        Label(master, text="Keywords").grid(row=1)
+        self.comment_field.grid(row=1, column=1)
+        Label(master, text="Keywords").grid(row=2)
         self.keywords_field = Entry(master)
-        self.keywords_field.grid(row=1, column=1)
+        self.keywords_field.grid(row=2, column=1)
 
     def apply(self):
         self.comment = self.comment_field.get()
         self.keywords = self.keywords_field.get()
+        self.album = self.album_field.get()
         self.okPressed = True
+
+class Photo():
+    srcPath = None
+    path = None
+    comment = None
+    keywords = []
+    
+    def __init__(self):
+        pass
+
+class Album():
+    name = None
+    path = None
+    comment = None
+    albums = {}
+    photos = []
 
 class App:
     settings = Settings()
+    rootAlbum = None
     
     def __init__(self, master):
         master.config()
 
-        
         self.frame = Frame(master, width=self.settings.width, height=self.settings.height)
-
 
         self.menubar = Menu(self.frame)
         self.actionmenu = Menu(self.menubar, tearoff=0)
@@ -91,6 +114,7 @@ class App:
         master.protocol("WM_DELETE_WINDOW", self.handleClose)
         master.config(menu=self.menubar)
 
+        self.loadAlbums()
         
         #x = Image.open("c:\\temp\\charlie\\20110302.jpg")
         #x = x.resize((250,250))
@@ -98,7 +122,81 @@ class App:
         #self.image_label = Label(self.frame, image=self.image, bd=0)
         #self.image_label.pack()
         
+        self.tree = ttk.Treeview(self.frame)
+        
+        self.buildAlbumTree()
+        
+        self.tree.pack()
+        
         self.frame.pack()
+    
+    def addAlbumToTree(self, node, album):
+        # create the album node
+        
+        if node == None:
+            id = self.tree.insert('', 'end', album.name, text=album.name)
+        else:
+            id = self.tree.insert(node, 'end', node + "." + album.name, text=album.name)
+        
+        # add albums
+        for childAlbum in album.albums.keys():
+            self.addAlbumToTree(id, album.albums[childAlbum])
+        
+    def buildAlbumTree(self):
+        node = None
+        try:
+            self.tree.delete('Library')
+        except:
+            #ignore error as will just be the first time we build the tree
+            pass
+        
+        self.addAlbumToTree(node, self.rootAlbum)
+
+    def loadAlbum(self, path, title = None, regenSideCar = False):
+        album = Album()
+        if title not in (None, ''):
+            album.name = "Library"
+        else:
+            album.name = path[path.rfind(os.sep):]
+            #Quick hack for windows!
+            if album.name.startswith('\\'):
+                album.name = album.name[1:]
+            
+        album.albums = {}
+        album.photos = []
+        album.path = path
+        
+        for fl in os.listdir(path):
+            if not os.path.isfile(path + os.sep + fl):
+                # directory / albumn!
+                album.albums[fl] = self.loadAlbum(path + os.sep + fl)
+            else:
+                #image or sidecar file!
+                if self.isImageFile(path + os.sep + fl):
+                    if not regenSideCar:
+                        ph = None
+                        if os.path.exists(path + os.sep + fl + ".sidecar"):
+                            ph = self.loadSideCarFile(path + os.sep + fl + ".sidecar")
+                        else:
+                            ph = Photo()
+                            ph.comment = ""
+                            ph.keywords = {}
+                            ph.srcPath = None
+                            
+                        ph.path = path + os.sep + fl
+                        print ph.srcPath
+                        album.photos.append(ph)
+                    else:
+                        tkMessageBox.showinfo("Loading", "Regenerating of sidecar information not implemented yet")
+
+        return album
+    
+    def loadAlbums(self, regenSideCar=False):
+        self.rootAlbum = self.loadAlbum(self.settings.library_dir, title="Library")
+        
+        if self.rootAlbum == None:
+            self.rootAlbum = Album()
+            self.rootAlbum.name = "Library"
         
     def handleClose(self):
         self.quit()
@@ -134,6 +232,13 @@ class App:
         
         if not imd.okPressed:
             return
+
+        if imd.album and imd.album not in (None, ''):
+            album = imd.album
+            albumpath = imd.album + os.sep
+        else:
+            album = None
+            albumpath = ""
         
         if imd.keywords and imd.keywords not in (None, ''):
             keywords = imd.keywords
@@ -148,7 +253,7 @@ class App:
         paths = self.buildFileList(importFrom)
         numTotal = len(paths)
         
-        nonDupes = self.removeDuplicates(paths, importFrom)
+        nonDupes = self.removeDuplicates(paths, importFrom, albumpath)
         numDuplicates = numTotal - len(nonDupes)
         
         if tkMessageBox.askyesno("Import",  message="Out of %d photos found, %d look to be duplicates. Continue with import?" % (numTotal,  numDuplicates)):
@@ -156,7 +261,7 @@ class App:
             self.settings.saveSettings()
             
             for path in nonDupes:
-                dest = self.buildLibPath(importFrom, path)
+                dest = self.buildLibPath(importFrom, path, albumpath)
                 self.copyFileIncludingDirectories(path, dest)
                 # TODO Handle copy failure exceptions!
                 
@@ -169,6 +274,9 @@ class App:
             
             tkMessageBox.showinfo("Import", message="Import completed")
             #verify all files again?
+        
+        self.loadAlbums()
+        self.buildAlbumTree()
 
     def buildSideCarFile(self, path, dest, comments, keywords):
         sidecarFilePath = dest + os.extsep + "sidecar"
@@ -179,7 +287,25 @@ class App:
         f.write("exif:\n")
         f.close()
         # read info from file and populate sidecar
-        
+    
+    def loadSideCarFile(self, path):
+        ph = Photo()
+        f = open(path)
+        for line in f:
+            if line.startswith("originalpath="):
+                ph.srcPath = line[len("originalpath="):]
+            elif line.startswith("keywords="):
+                keywords = line[len("keywords="):]
+                for keyword in keywords.split(","):
+                    ph.keywords.append(keyword.strip())
+            elif line.startswith("comment="):
+                ph.comment = line[len("comment="):]
+            else:
+                # EXIF?!?!?!
+                pass
+            
+        f.close()
+        return ph
 
     def copyFileIncludingDirectories(self, src, dest):
         dirs = dest.split(os.sep)
@@ -193,17 +319,17 @@ class App:
         shutil.copyfile(src, dest)
         pass
     
-    def buildLibPath(self, importFrom, path):
+    def buildLibPath(self, importFrom, path, albumpath):
         relPath = path[len(importFrom):]
-        libPath = self.settings.library_dir + os.sep + relPath
+        libPath = self.settings.library_dir + os.sep + albumpath + relPath
         
         return libPath
         
-    def removeDuplicates(self, paths, importFrom):
+    def removeDuplicates(self, paths, importFrom, albumpath):
         nonDupes = []
         
         for path in paths:
-            libPath = self.buildLibPath(importFrom, path)
+            libPath = self.buildLibPath(importFrom, path, albumpath)
             if not os.path.exists(libPath):
                 nonDupes.append(path)
         
@@ -215,6 +341,8 @@ class App:
             if filepath.upper().endswith(extension.upper()):
                 return True
         return False
+        
+    
         
     def buildFileList(self, importFrom):
         paths = []

@@ -24,6 +24,10 @@
         [x] copy library folder to bkup folders!
 
 [ ] Review 
+	[ ] Load photos
+		[ ] albums 
+		[ ] photos and albums in albums!
+		
 	[ ] View individual photo
 		[ ] autorotate based on EXIF data,
 		[ ] next / prev image
