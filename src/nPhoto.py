@@ -125,17 +125,25 @@ class App:
         self.tree = ttk.Treeview(self.frame)
         
         self.buildAlbumTree()
-        self.tree.tag_bind('node', '<1>', self.itemClicked)        
+        self.tree.tag_bind('node', '<<TreeviewSelect>>', self.itemClicked)        
         self.tree.pack()
         
         self.frame.pack()
     
     def itemClicked(self, event):
         #self.tree.selection()
-        print self.tree.focus()
-        print self.tree.selection()
-        print event
-    
+        albumName = self.tree.focus()
+        album = None
+        for folder in albumName.split("."):
+            if folder == 'Library': 
+                album = self.rootAlbum
+            else:
+                album = album.albums[folder]
+                
+        
+        if album <> None:
+            tkMessageBox.showinfo("Selection", message="SHOW THE IMAGES FOR ALBUM %s" %(album.name))
+        
     def addAlbumToTree(self, node, album):
         # create the album node
         
