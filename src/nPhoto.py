@@ -125,18 +125,24 @@ class App:
         self.tree = ttk.Treeview(self.frame)
         
         self.buildAlbumTree()
-        
+        self.tree.tag_bind('node', '<1>', self.itemClicked)        
         self.tree.pack()
         
         self.frame.pack()
+    
+    def itemClicked(self, event):
+        #self.tree.selection()
+        print self.tree.focus()
+        print self.tree.selection()
+        print event
     
     def addAlbumToTree(self, node, album):
         # create the album node
         
         if node == None:
-            id = self.tree.insert('', 'end', album.name, text=album.name)
+            id = self.tree.insert('', 'end', album.name, text=album.name, tags=('node'))
         else:
-            id = self.tree.insert(node, 'end', node + "." + album.name, text=album.name)
+            id = self.tree.insert(node, 'end', node + "." + album.name, text=album.name, tags=('node'))
         
         # add albums
         for childAlbum in album.albums.keys():
