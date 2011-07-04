@@ -1,12 +1,3 @@
-[x] handle 'X' quitting on main window
-[x] remember window width / height!
-[x] create settings dialog shell and show
-[x] add settings
-	[x] import dir
-	[x] list of backup dirs
-	[x] library directory
-[x] Window title
-
 [x] Do Import!
         [x] make sure we have a library folder
         [x] make sure we have an import folder
@@ -14,16 +5,26 @@
         [x] copy all non duplicates
         [x] verify they have been copied
         [x] prompt for comment and keywords on import
-		[x] create sidecar file with comment and keywords
-        [ ] import into 'album'? or 'day taken'?
-        [ ] 
+	[x] create sidecar file with comment and keywords
+        [x] import into 'album'
         
-[x] Do Backup!
+[x| Do Backup!
         [x] make sure we have a library folder
         [x] make sure we have at least one backup folder
         [x] make sure backup folders are valid
         [x] check if bkup folders are empty?
         [x] copy library folder to bkup folders!
+
+[ ] Browser
+        [ ] Tree control of album hierarchy?
+		[ ] Thumbnails - 3 x 3? configurable?
+		[ ] next / prev page buttons
+		[ ] multi-select
+		[ ] delete selected		
+		[ ] autorotate based on EXIF data
+	
+        
+	[ ] searching! - build XML library? sqllite?
 
 [ ] Review 
 	[ ] Load photos
@@ -37,17 +38,7 @@
 		[ ] edit keywords - sidecar
 		[ ] edit comment - sidecar
 
-    [ ] Browser
-        [ ] Tree control of album hierarchy?
-		[ ] Thumbnails - 3 x 3? configurable?
-		[ ] next / prev page buttons
-		[ ] multi-select
-		[ ] delete selected		
-		[ ] autorotate based on EXIF data
-	
-        
-	[ ] searching! - build XML library? sqllite?
-
+    
 [ ] read EXIF on import
 [ ] IPTC keywords
 [ ] JPEG comments
