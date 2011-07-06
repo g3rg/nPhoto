@@ -203,19 +203,75 @@ class NPhotoMainWindow(QMainWindow):
     def loadInitialPhoto(self):
         self.loadFile("/home/g3rgz/1228465149000.jpg")
 
-    def loadAlbum(self, albumName):
-        pass
-
     def loadLibrary(self):
         self.status.showMessage("Loading Photo Library")
 
+        self.rootAlbum = self.loadAlbum(self.getSetting("Paths/Library"), "Library")
+
         if self.rootAlbum == None:
             self.rootAlbum = Album(name="Library")
-
-        self.loadAlbum(self.rootAlbum)
+        
         self.loadInitialPhoto()
 
         self.status.showMessage("Library successfully loaded", 5000)
+
+    def loadAlbum(self, path, title = None, regenSideCar = False):
+        album = Album()
+        if title not in (None, ''):
+            album.name = title
+        else:
+            album.name = path[path.rfind(os.sep)+1:]
+            #Quick hack for windows!
+            #if album.name.startswith('\\'):
+            #    album.name = album.name[1:]
+            
+        album.albums = {}
+        album.photos = []
+        album.path = path
+        
+        for fl in os.listdir(path):
+            if not os.path.isfile(path + os.sep + fl):
+                album.albums[fl] = self.loadAlbum(path + os.sep + fl)
+            else:
+                if self.isImageFile(path + os.sep + fl):
+                    if not regenSideCar:
+                        ph = None
+                        if os.path.exists(path + os.sep + fl + ".sidecar"):
+                            ph = self.loadSideCarFile(path + os.sep + fl + ".sidecar")
+                        else:
+                            ph = Photo()
+                            ph.comment = ""
+                            ph.keywords = {}
+                            ph.srcPath = None
+                            
+                        ph.path = path + os.sep + fl
+                        print ph.path
+                        album.photos.append(ph)
+                    else:
+                        QMessageBox.information(self, "Loading", "Regenerating of sidecar information not implemented yet")
+
+        return album
+
+    def loadSideCarFile(self, path):
+        ph = Photo()
+        f = open(path)
+        for line in f:
+            if line.startswith("originalpath="):
+                ph.srcPath = line[len("originalpath="):]
+            elif line.startswith("keywords="):
+                keywords = line[len("keywords="):]
+                for keyword in keywords.split(","):
+                    ph.keywords.append(keyword.strip())
+            elif line.startswith("comment="):
+                ph.comment = line[len("comment="):]
+            else:
+                # EXIF?!?!?!
+                pass
+            
+        f.close()
+        return ph
+
+
 
     def loadFile(self, fname):
         if fname:
@@ -232,13 +288,11 @@ class NPhotoMainWindow(QMainWindow):
             self.status.showMessage(message, 10000)
 
     def closeEvent(self, event):
-        print "Closing"
         settings = QSettings()
         #TODO Store Last image file and album?
         settings.setValue("MainWindow/Size", QVariant(self.size()))
         settings.setValue("MainWindow/Position", QVariant(self.pos()))
         settings.setValue("MainWindow/State", QVariant(self.saveState()))
-        print "Closed"
 
 
     def doImport(self):
@@ -317,6 +371,8 @@ class NPhotoMainWindow(QMainWindow):
                 
                 QMessageBox.information(self, "Import", "Import completed")
                 #verify all files again?
+
+                self.loadLibrary()
 
     def buildSideCarFile(self, path, dest, comments, keywords):
         sidecarFilePath = dest + os.extsep + "sidecar"

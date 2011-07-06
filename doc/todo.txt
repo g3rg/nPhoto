@@ -15,6 +15,11 @@
         [x] check if bkup folders are empty?
         [x] copy library folder to bkup folders!
 
+[x] Load photos
+    [x] albums 
+    [x] photos and albums in albums!
+    [ ] after import
+
 [ ] Browser
         [ ] Tree control of album hierarchy?
 		[ ] Thumbnails - 3 x 3? configurable?
@@ -27,9 +32,6 @@
 	[ ] searching! - build XML library? sqllite?
 
 [ ] Review 
-	[ ] Load photos
-		[ ] albums 
-		[ ] photos and albums in albums!
 		
 	[ ] View individual photo
 		[ ] autorotate based on EXIF data,
