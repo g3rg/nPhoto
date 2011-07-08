@@ -10,7 +10,8 @@ import datetime
 
 from PyQt4.QtCore import Qt, QTime, QTimer, QSettings, QVariant, QPoint, QSize, SIGNAL, SLOT
 from PyQt4.QtGui import QApplication, QLabel, QImage, QMainWindow, QPixmap, QAction, \
-            QIcon, QDialog, QDialogButtonBox, QGridLayout, QLineEdit, QMessageBox, QFileDialog
+            QIcon, QDialog, QDialogButtonBox, QGridLayout, QLineEdit, QMessageBox, QFileDialog, QTreeWidget, \
+            QTreeWidgetItem
 
 __version__ = "0.1.0"
 
@@ -97,11 +98,11 @@ class NPhotoMainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(NPhotoMainWindow, self).__init__(parent)
 
-        self.image = QImage()
-        self.imageLabel = QLabel()
-        self.imageLabel.setMinimumSize(200,200)
-        self.imageLabel.setAlignment(Qt.AlignCenter)
-        self.setCentralWidget(self.imageLabel)
+        #self.image = QImage()
+        #self.imageLabel = QLabel()
+        #self.imageLabel.setMinimumSize(200,200)
+        #self.imageLabel.setAlignment(Qt.AlignCenter)
+        #self.setCentralWidget(self.imageLabel)
 
         self.status = self.statusBar()
         self.status.setSizeGripEnabled(False)
@@ -121,6 +122,14 @@ class NPhotoMainWindow(QMainWindow):
         self.move(position)
         self.restoreState(settings.value("MainWindow/State").toByteArray())
         self.setWindowTitle("nPhoto")
+
+        self.tree = QTreeWidget()
+
+        self.setCentralWidget(self.tree)
+        self.tree.setColumnCount(1)
+        self.tree.setHeaderLabels(["Album"])
+        self.tree.setItemsExpandable(True)
+            
 
         if settings.value("Paths/Library").toString() not in (None, ''):
             QTimer.singleShot(0, self.loadLibrary)
@@ -200,8 +209,15 @@ class NPhotoMainWindow(QMainWindow):
             action.setCheckable(True)
         return action
 
-    def loadInitialPhoto(self):
-        self.loadFile("/home/g3rgz/1228465149000.jpg")
+#    def loadInitialPhoto(self):
+#        self.loadFile("/home/g3rgz/1228465149000.jpg")
+
+    def buildTree(self, parentNode, parentAlbum):
+        for name in parentAlbum.albums:
+            childNode = QTreeWidgetItem(parentNode, [name])
+            childAlbum = parentAlbum.albums[name]
+            if childAlbum.albums != None and len(childAlbum.albums) > 0:
+                self.buildTree(childNode, childAlbum)
 
     def loadLibrary(self):
         self.status.showMessage("Loading Photo Library")
@@ -210,8 +226,11 @@ class NPhotoMainWindow(QMainWindow):
 
         if self.rootAlbum == None:
             self.rootAlbum = Album(name="Library")
+
+        node = QTreeWidgetItem(self.tree, ["Library"])
+        self.buildTree(node, self.rootAlbum)
         
-        self.loadInitialPhoto()
+        #self.loadInitialPhoto()
 
         self.status.showMessage("Library successfully loaded", 5000)
 
@@ -273,19 +292,19 @@ class NPhotoMainWindow(QMainWindow):
 
 
 
-    def loadFile(self, fname):
-        if fname:
-            self.image = QImage(fname)
-            if self.image.isNull():
-                message = "Failed to read %s" % fname
-            else:
-                width = self.image.width()
-                height = self.image.height()
-                image = self.image.scaled(width, height, Qt.KeepAspectRatio)
-                self.imageLabel.setPixmap(QPixmap.fromImage(image))
-                message = "Loaded %s" % fname
+#    def loadFile(self, fname):
+#        if fname:
+#            self.image = QImage(fname)
+#            if self.image.isNull():
+#                message = "Failed to read %s" % fname
+#            else:
+#                width = self.image.width()
+#                height = self.image.height()
+#                image = self.image.scaled(width, height, Qt.KeepAspectRatio)
+#                self.imageLabel.setPixmap(QPixmap.fromImage(image))
+#                message = "Loaded %s" % fname
 
-            self.status.showMessage(message, 10000)
+#            self.status.showMessage(message, 10000)
 
     def closeEvent(self, event):
         settings = QSettings()
