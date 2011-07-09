@@ -11,7 +11,7 @@ import datetime
 from PyQt4.QtCore import Qt, QTime, QTimer, QSettings, QVariant, QPoint, QSize, SIGNAL, SLOT
 from PyQt4.QtGui import QApplication, QLabel, QImage, QMainWindow, QPixmap, QAction, \
             QIcon, QDialog, QDialogButtonBox, QGridLayout, QLineEdit, QMessageBox, QFileDialog, QTreeWidget, \
-            QTreeWidgetItem
+            QTreeWidgetItem, QSplitter, QScrollArea, QPalette, QSizePolicy
 
 __version__ = "0.1.0"
 
@@ -63,8 +63,6 @@ class SettingsDialog(QDialog):
     def __init__(self, parent, libPath, backupPaths, extensions):
         super(SettingsDialog, self).__init__(parent)
 
-        #self.parent = parent
-        
         libPathLabel = QLabel("Library Path")
         self.libPathEdit = QLineEdit(libPath)
         backupPathsLabel = QLabel("Backup Paths")
@@ -98,12 +96,6 @@ class NPhotoMainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(NPhotoMainWindow, self).__init__(parent)
 
-        #self.image = QImage()
-        #self.imageLabel = QLabel()
-        #self.imageLabel.setMinimumSize(200,200)
-        #self.imageLabel.setAlignment(Qt.AlignCenter)
-        #self.setCentralWidget(self.imageLabel)
-
         self.status = self.statusBar()
         self.status.setSizeGripEnabled(False)
 
@@ -125,11 +117,31 @@ class NPhotoMainWindow(QMainWindow):
 
         self.tree = QTreeWidget()
 
-        self.setCentralWidget(self.tree)
         self.tree.setColumnCount(1)
         self.tree.setHeaderLabels(["Album"])
         self.tree.setItemsExpandable(True)
-            
+
+        self.image = QImage()
+        self.imageLabel = QLabel()
+        self.imageLabel.setBackgroundRole(QPalette.Base)
+        self.imageLabel.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        self.imageLabel.setScaledContents(True)
+
+        self.imageLabel.setAlignment(Qt.AlignCenter)
+
+        self.scrollArea = QScrollArea()
+        self.scrollArea.setBackgroundRole(QPalette.Dark)
+        self.scrollArea.setWidget(self.imageLabel)
+
+
+        self.mainSplitter = QSplitter(Qt.Horizontal)
+        self.mainSplitter.addWidget(self.tree)
+        self.mainSplitter.addWidget(self.scrollArea)
+        self.mainSplitter.setStretchFactor(1,4)
+        
+        self.setCentralWidget(self.mainSplitter)
+
+        self.mainSplitter.restoreState(settings.value("MainWindow/Splitter").toByteArray())
 
         if settings.value("Paths/Library").toString() not in (None, ''):
             QTimer.singleShot(0, self.loadLibrary)
@@ -209,8 +221,9 @@ class NPhotoMainWindow(QMainWindow):
             action.setCheckable(True)
         return action
 
-#    def loadInitialPhoto(self):
-#        self.loadFile("/home/g3rgz/1228465149000.jpg")
+    def loadInitialPhoto(self):
+        self.loadFile("/home/g3rgz/1228465149000.jpg")
+        self.imageLabel.adjustSize()
 
     def buildTree(self, parentNode, parentAlbum):
         for name in parentAlbum.albums:
@@ -230,7 +243,7 @@ class NPhotoMainWindow(QMainWindow):
         node = QTreeWidgetItem(self.tree, ["Library"])
         self.buildTree(node, self.rootAlbum)
         
-        #self.loadInitialPhoto()
+        self.loadInitialPhoto()
 
         self.status.showMessage("Library successfully loaded", 5000)
 
@@ -292,19 +305,19 @@ class NPhotoMainWindow(QMainWindow):
 
 
 
-#    def loadFile(self, fname):
-#        if fname:
-#            self.image = QImage(fname)
-#            if self.image.isNull():
-#                message = "Failed to read %s" % fname
-#            else:
-#                width = self.image.width()
-#                height = self.image.height()
-#                image = self.image.scaled(width, height, Qt.KeepAspectRatio)
-#                self.imageLabel.setPixmap(QPixmap.fromImage(image))
-#                message = "Loaded %s" % fname
+    def loadFile(self, fname):
+        if fname:
+            self.image = QImage(fname)
+            if self.image.isNull():
+                message = "Failed to read %s" % fname
+            else:
+                width = self.image.width()
+                height = self.image.height()
+                image = self.image.scaled(width, height, Qt.KeepAspectRatio)
+                self.imageLabel.setPixmap(QPixmap.fromImage(image))
+                message = "Loaded %s" % fname
 
-#            self.status.showMessage(message, 10000)
+            self.status.showMessage(message, 10000)
 
     def closeEvent(self, event):
         settings = QSettings()
@@ -312,7 +325,7 @@ class NPhotoMainWindow(QMainWindow):
         settings.setValue("MainWindow/Size", QVariant(self.size()))
         settings.setValue("MainWindow/Position", QVariant(self.pos()))
         settings.setValue("MainWindow/State", QVariant(self.saveState()))
-
+        settings.setValue("MainWindow/Splitter", QVariant(self.mainSplitter.saveState()))
 
     def doImport(self):
         settings = QSettings()

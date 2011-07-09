@@ -21,16 +21,17 @@
     [ ] after import
 
 [ ] Browser
-        [ ] Tree control of album hierarchy?
+        [x] Tree control of album hierarchy?
 		[ ] Thumbnails - 3 x 3? configurable?
 		[ ] next / prev page buttons
 		[ ] multi-select
 		[ ] delete selected		
 		[ ] autorotate based on EXIF data
 	
-        
 	[ ] searching! - build XML library? sqllite?
 
+[ ] Compare View - select 2 photos and compare, allow deleting from here!
+ 
 [ ] Review 
 		
 	[ ] View individual photo
