@@ -367,8 +367,6 @@ class App:
                 return True
         return False
         
-    
-        
     def buildFileList(self, importFrom):
         paths = []
         for f in os.listdir(importFrom):
