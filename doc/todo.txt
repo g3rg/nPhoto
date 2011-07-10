@@ -18,17 +18,19 @@
 [x] Load photos
     [x] albums 
     [x] photos and albums in albums!
-    [ ] after import
 
 [ ] Browser
-        [x] Tree control of album hierarchy?
-		[ ] Thumbnails - 3 x 3? configurable?
+        [x] Tree control of album hierarchy
+		[x] Thumbnail grid
+                [ ] load the photos from current album
 		[ ] next / prev page buttons
+                [ ] detect change of selection on tree!
 		[ ] multi-select
 		[ ] delete selected		
 		[ ] autorotate based on EXIF data
-	
-	[ ] searching! - build XML library? sqllite?
+	[ ] Tree control by date of photo
+             [ ] drop down to select between album or date view
+
 
 [ ] Compare View - select 2 photos and compare, allow deleting from here!
  
@@ -41,7 +43,7 @@
 		[ ] edit keywords - sidecar
 		[ ] edit comment - sidecar
 
-    
+[ ] searching! - build XML library? sqllite?    
 [ ] read EXIF on import
 [ ] IPTC keywords
 [ ] JPEG comments

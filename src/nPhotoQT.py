@@ -11,7 +11,7 @@ import datetime
 from PyQt4.QtCore import Qt, QTime, QTimer, QSettings, QVariant, QPoint, QSize, SIGNAL, SLOT
 from PyQt4.QtGui import QApplication, QLabel, QImage, QMainWindow, QPixmap, QAction, \
             QIcon, QDialog, QDialogButtonBox, QGridLayout, QLineEdit, QMessageBox, QFileDialog, QTreeWidget, \
-            QTreeWidgetItem, QSplitter, QScrollArea, QPalette, QSizePolicy
+            QTreeWidgetItem, QSplitter, QScrollArea, QPalette, QSizePolicy, QFrame, QBoxLayout
 
 __version__ = "0.1.0"
 
@@ -72,10 +72,8 @@ class SettingsDialog(QDialog):
         
         buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         
-        self.connect(buttonBox, SIGNAL("accepted()"),
-        self, SLOT("accept()"))
-        self.connect(buttonBox, SIGNAL("rejected()"),
-        self, SLOT("reject()"))
+        self.connect(buttonBox, SIGNAL("accepted()"), self, SLOT("accept()"))
+        self.connect(buttonBox, SIGNAL("rejected()"), self, SLOT("reject()"))
         self.setWindowTitle("Settings")
 
         grid = QGridLayout()
@@ -115,28 +113,49 @@ class NPhotoMainWindow(QMainWindow):
         self.restoreState(settings.value("MainWindow/State").toByteArray())
         self.setWindowTitle("nPhoto")
 
+        self.controlFrame = QFrame()
+        self.controlLayout = QBoxLayout(QBoxLayout.TopToBottom)
+
+        self.viewByCombo = QLabel("PLACEHOLDER")
+        
         self.tree = QTreeWidget()
 
         self.tree.setColumnCount(1)
         self.tree.setHeaderLabels(["Album"])
         self.tree.setItemsExpandable(True)
 
-        self.image = QImage()
-        self.imageLabel = QLabel()
-        self.imageLabel.setBackgroundRole(QPalette.Base)
-        self.imageLabel.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
-        self.imageLabel.setScaledContents(True)
+        self.connect(self.tree, SIGNAL("itemSelectionChanged()"), self.treeSelection)
 
-        self.imageLabel.setAlignment(Qt.AlignCenter)
 
-        self.scrollArea = QScrollArea()
-        self.scrollArea.setBackgroundRole(QPalette.Dark)
-        self.scrollArea.setWidget(self.imageLabel)
+        self.controlLayout.addWidget(self.viewByCombo)
+        self.controlLayout.addWidget(self.tree)
+
+        self.controlFrame.setLayout(self.controlLayout)
+
+        self.browserFrame = QFrame()
+
+        self.browserGrid = QGridLayout()
+
+        self.imageLabels = []
+        for row in range(0,3):
+            self.imageLabels.append([])
+            for col in range(0,3):
+                
+                self.imageLabels[row].append(QLabel())
+                self.imageLabels[row][col].setBackgroundRole(QPalette.Base)
+                self.imageLabels[row][col].setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+                self.imageLabels[row][col].setScaledContents = True
+                self.imageLabels[row][col].setAlignment(Qt.AlignCenter)
+
+                self.browserGrid.addWidget(self.imageLabels[row][col],row,col)
+
+        self.browserFrame.setLayout(self.browserGrid)
+
 
 
         self.mainSplitter = QSplitter(Qt.Horizontal)
-        self.mainSplitter.addWidget(self.tree)
-        self.mainSplitter.addWidget(self.scrollArea)
+        self.mainSplitter.addWidget(self.controlFrame)
+        self.mainSplitter.addWidget(self.browserFrame)
         self.mainSplitter.setStretchFactor(1,4)
         
         self.setCentralWidget(self.mainSplitter)
@@ -155,6 +174,42 @@ class NPhotoMainWindow(QMainWindow):
             else:
                 target.addAction(action)
 
+    def treeSelection(self):
+        curr = self.tree.currentItem()
+        path = curr.data(0,0).toString()
+        tmp = curr
+        while tmp.parent() is not None:
+            tmp = tmp.parent()
+            path = tmp.data(0,0).toString() + "." + path
+
+        album = self.getAlbum(path)
+        if hasattr(self, 'currentAlbum'):
+            if self.currentAlbum != album:
+                self.currentAlbum = album
+        else:
+            self.currentAlbum = album
+        self.changeAlbums()
+
+    def changeAlbums(self):
+        print "Loading %s and %d photos" % (self.currentAlbum.name, len(self.currentAlbum.photos))
+        for row in range(0, len(self.imageLabels)):
+            for col in range(0, len(self.imageLabels[row])):
+                if len(self.currentAlbum.photos)< (row*3 + col):
+                    self.imageLabels[row][col].setPixmap(QPixmap())
+                else:
+                    self.imageLabels[row][col].setPixmap(self.loadQPixMap(self.currentAlbum.photos[row*3+col].path))
+                                                   
+    def getAlbum(self, path):
+        nodes = path.split(".")
+        if nodes[0] != 'Library':
+            print "WTF?!?!?!"
+        else:
+            album = self.rootAlbum
+            for albumName in nodes[1:]:
+                print "Hunting for %s" % albumName
+                album = album.albums[unicode(albumName)]
+
+            return album
 
         
     def doBackup(self):
@@ -222,8 +277,11 @@ class NPhotoMainWindow(QMainWindow):
         return action
 
     def loadInitialPhoto(self):
-        self.loadFile("/home/g3rgz/1228465149000.jpg")
-        self.imageLabel.adjustSize()
+        pass
+        #self.loadFile("/home/g3rgz/1228465149000.jpg")
+        #for row in range(0,len(self.imageLabels)):
+        #    for col in range(0,len(self.imageLabels[row])):
+        #        self.imageLabels[row][col].adjustSize()
 
     def buildTree(self, parentNode, parentAlbum):
         for name in parentAlbum.albums:
@@ -242,7 +300,9 @@ class NPhotoMainWindow(QMainWindow):
 
         node = QTreeWidgetItem(self.tree, ["Library"])
         self.buildTree(node, self.rootAlbum)
-        
+
+
+        self.tree.setCurrentItem(node)
         self.loadInitialPhoto()
 
         self.status.showMessage("Library successfully loaded", 5000)
@@ -303,7 +363,22 @@ class NPhotoMainWindow(QMainWindow):
         f.close()
         return ph
 
+    def loadQPixMap(self, fname):
+        qpx = None
+        message = ""
+        if fname:
+            self.image = QImage(fname)
+            if self.image.isNull():
+                message = "Failed to read %s" % fname
+            else:
+                width = self.image.width()
+                height = self.image.height()
+                image = self.image.scaled(width, height, Qt.KeepAspectRatio)
+                qpx = QPixmap(QPixmap.fromImage(image))
+                message = "Loaded %s" % fname
 
+        self.status.showMessage(message, 10000)
+        return qpx
 
     def loadFile(self, fname):
         if fname:
@@ -314,7 +389,10 @@ class NPhotoMainWindow(QMainWindow):
                 width = self.image.width()
                 height = self.image.height()
                 image = self.image.scaled(width, height, Qt.KeepAspectRatio)
-                self.imageLabel.setPixmap(QPixmap.fromImage(image))
+                for row in range(0,len(self.imageLabels)):
+                    for col in range(0,len(self.imageLabels[row])):
+                        self.imageLabels[row][col].setPixmap(QPixmap.fromImage(image))
+                        
                 message = "Loaded %s" % fname
 
             self.status.showMessage(message, 10000)

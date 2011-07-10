@@ -1,7 +1,3 @@
-flowlayout or gridlayout for thumbnails
-
-
-
 nbPhoto
 -------
 GUI application that allows tagging and commenting of photos, with a focus on being fast and lightweight and to 
