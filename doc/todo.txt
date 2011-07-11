@@ -19,23 +19,26 @@
     [x] albums 
     [x] photos and albums in albums!
 
+[x] About box
+
 [ ] Browser
         [x] Tree control of album hierarchy
 		[x] Thumbnail grid
-                [ ] load the photos from current album
-		[ ] next / prev page buttons
-                [ ] detect change of selection on tree!
-		[ ] multi-select
-		[ ] delete selected		
-		[ ] autorotate based on EXIF data
-	[ ] Tree control by date of photo
-             [ ] drop down to select between album or date view
-
+                [x] detect change of selection on tree!
+                [x] load the photos from current album
+        [x] scale images (thumbnails?)
+        [ ] read exif data and save to sidecarfile
+        [ ] store select exif in photo object
+	[ ] next / prev page buttons
+        [ ] select individual photo and edit
+	[ ] multi-select
+	[ ] delete selected
+        [ ] order photos by date/time taken
+	[ ] autorotate based on EXIF data
 
 [ ] Compare View - select 2 photos and compare, allow deleting from here!
  
-[ ] Review 
-		
+[ ] Review 		
 	[ ] View individual photo
 		[ ] autorotate based on EXIF data,
 		[ ] next / prev image
@@ -43,9 +46,14 @@
 		[ ] edit keywords - sidecar
 		[ ] edit comment - sidecar
 
+[ ] Tree control by date of photo
+    [ ] drop down to select between album or date view
+
+[ ] replace browser image loading with thumbnail from within jpeg?
 [ ] searching! - build XML library? sqllite?    
 [ ] read EXIF on import
 [ ] IPTC keywords
 [ ] JPEG comments
 [ ] RAW sidecar files?
 [ ] display EXIF
+[ ] video files!

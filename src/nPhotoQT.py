@@ -8,6 +8,10 @@ import sys
 import shutil
 import datetime
 
+import Image
+import ExifTags
+
+
 from PyQt4.QtCore import Qt, QTime, QTimer, QSettings, QVariant, QPoint, QSize, SIGNAL, SLOT
 from PyQt4.QtGui import QApplication, QLabel, QImage, QMainWindow, QPixmap, QAction, \
             QIcon, QDialog, QDialogButtonBox, QGridLayout, QLineEdit, QMessageBox, QFileDialog, QTreeWidget, \
@@ -31,6 +35,29 @@ class Album():
     def __init__(self, name=None):
         if name != None:
             self.name = name
+
+class EditPhotoDialog(QDialog):
+    def __init__(self, parent, comment, keywords):
+        super(EditPhotoDialog, self).__init__(parent)
+        commentLabel = QLabel("Comment")
+        self.commentEdit = QLineEdit(comment)
+        keywordLabel = QLabel("Keyword")
+        self.keywordEdit = QLineEdit(keywords)
+        buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+
+        self.connect(buttonBox, SIGNAL("accepted()"), self, SLOT("accept()"))
+        self.connect(buttonBox, SIGNAL("rejected()"), self, SLOT("reject()"))
+        self.setWindowTitle("Edit Photo")
+
+        grid = QGridLayout()
+        grid.addWidget(commentLabel, 0, 0)
+        grid.addWidget(self.commentEdit, 0, 1)
+        grid.addWidget(keywordLabel, 1, 0)
+        grid.addWidget(self.keywordEdit, 1, 1)
+
+        grid.addWidget(buttonBox, 2, 0, 1, 2)
+        self.setLayout(grid)
+
 
 class ImportMetadataDialog(QDialog):
     def __init__(self, parent):
@@ -98,12 +125,17 @@ class NPhotoMainWindow(QMainWindow):
         self.status.setSizeGripEnabled(False)
 
         fileMenu = self.menuBar().addMenu("&File")
+        fileEditAction = self.createAction("&Edit", self.doEdit, "Ctrl-E", "fileedit", "Edit photo details")
         fileImportAction = self.createAction("&Import", self.doImport, "Ctrl-I", "fileimport", "Import photos into your library")
         fileBackupAction = self.createAction("&Backup", self.doBackup, "Ctrl-B", "filebkup", "Backup your library")
         fileSettingsAction = self.createAction("&Settings", self.doSettings, "Ctrl-S", "filesettings", "Settings")
         fileQuitAction = self.createAction("&Quit", self.close, "Ctrl+Q", "filequit", "Close the application")
 
-        self.addActions(fileMenu, (fileImportAction, fileBackupAction, fileSettingsAction, None, fileQuitAction))
+        helpMenu = self.menuBar().addMenu("&Help")
+        helpAboutAction = self.createAction("&About", self.doAbout, None, "helpabout", "About nPhoto")
+        
+        self.addActions(fileMenu, (fileEditAction, fileImportAction, fileBackupAction, fileSettingsAction, None, fileQuitAction))
+        self.addActions(helpMenu, (helpAboutAction,))
     
         settings = QSettings()
         size = settings.value("MainWindow/Size", QVariant(QSize(600,500))).toSize()
@@ -125,7 +157,6 @@ class NPhotoMainWindow(QMainWindow):
         self.tree.setItemsExpandable(True)
 
         self.connect(self.tree, SIGNAL("itemSelectionChanged()"), self.treeSelection)
-
 
         self.controlLayout.addWidget(self.viewByCombo)
         self.controlLayout.addWidget(self.tree)
@@ -191,13 +222,15 @@ class NPhotoMainWindow(QMainWindow):
         self.changeAlbums()
 
     def changeAlbums(self):
-        print "Loading %s and %d photos" % (self.currentAlbum.name, len(self.currentAlbum.photos))
-        for row in range(0, len(self.imageLabels)):
-            for col in range(0, len(self.imageLabels[row])):
-                if len(self.currentAlbum.photos)< (row*3 + col):
+        for row in range(0, 3):
+            #len(self.imageLabels)):
+            for col in range(0, 3):
+                #len(self.imageLabels[row])):
+                if len(self.currentAlbum.photos)<= (row*3 + col):
                     self.imageLabels[row][col].setPixmap(QPixmap())
                 else:
                     self.imageLabels[row][col].setPixmap(self.loadQPixMap(self.currentAlbum.photos[row*3+col].path))
+                    self.imageLabels[row][col].adjustSize()
                                                    
     def getAlbum(self, path):
         nodes = path.split(".")
@@ -244,6 +277,13 @@ class NPhotoMainWindow(QMainWindow):
         
         QMessageBox.information(self, "Backup", "Backup completed!")
 
+
+    def doEdit(self):
+        comment = "No Comment"
+        keywords = "one two three"
+        dialog = EditPhotoDialog(self, comment, keywords)
+        if dialog.exec_():
+            print "Editing!"
 
     def doSettings(self):
         settings = QSettings()
@@ -307,6 +347,16 @@ class NPhotoMainWindow(QMainWindow):
 
         self.status.showMessage("Library successfully loaded", 5000)
 
+    def loadExif(self, path):
+        img = Image.open("/home/g3rgz/1228465149000.jpg")
+        info = img._getexif()
+        tags = {}
+        for tag, value in info.items():
+            decoded = ExifTags.TAGS.get(tag,tag)
+            tags[decoded] = value
+
+        return tags
+
     def loadAlbum(self, path, title = None, regenSideCar = False):
         album = Album()
         if title not in (None, ''):
@@ -335,6 +385,8 @@ class NPhotoMainWindow(QMainWindow):
                             ph.comment = ""
                             ph.keywords = {}
                             ph.srcPath = None
+                            #self.buildSideCarFile(path + os.sep + fl + ".sidecar", dest, ph.comment, ph.keywords)
+                    
                             
                         ph.path = path + os.sep + fl
                         print ph.path
@@ -371,8 +423,8 @@ class NPhotoMainWindow(QMainWindow):
             if self.image.isNull():
                 message = "Failed to read %s" % fname
             else:
-                width = self.image.width()
-                height = self.image.height()
+                width = self.imageLabels[0][0].width()
+                height = self.imageLabels[0][0].height()
                 image = self.image.scaled(width, height, Qt.KeepAspectRatio)
                 qpx = QPixmap(QPixmap.fromImage(image))
                 message = "Loaded %s" % fname
@@ -475,8 +527,8 @@ class NPhotoMainWindow(QMainWindow):
                     if not os.path.exists(dest):
                         QMessageBox.warming(self, "Import Failed", "The file <%s> was not imported properly, aborting import" % (path))
                         return
-
-                    self.buildSideCarFile(path, dest, comments, keywords)
+                    exif = self.loadExif(path)
+                    self.buildSideCarFile(path, dest, comments, keywords, exif)
                     # add file info to DB
                 
                 QMessageBox.information(self, "Import", "Import completed")
@@ -484,13 +536,16 @@ class NPhotoMainWindow(QMainWindow):
 
                 self.loadLibrary()
 
-    def buildSideCarFile(self, path, dest, comments, keywords):
+    def buildSideCarFile(self, path, dest, comments, keywords, exif=None):
         sidecarFilePath = dest + os.extsep + "sidecar"
         f = open(sidecarFilePath, "w")
         f.write("originalpath=" + path + "\n")
         f.write("keywords=%s\n" % (keywords))
         f.write("comment=%s\n" % (comments))
         f.write("exif:\n")
+        if exif:
+            for tag, value in exif:
+                f.write(tag, "=", value)
         f.close()
         # read info from file and populate sidecar
 
@@ -548,6 +603,11 @@ class NPhotoMainWindow(QMainWindow):
                     paths.append(fullpath)
         return paths
 
+    def doAbout(self):
+        QMessageBox.about(self, "About nPhoto",
+                "<p>nPhoto allows simple reviewing, commenting, and keywording of images, useful for running"
+                                " on a netbook while travelling, to then import into programs such as Lightroom"
+                                " on return from your holiday</p>")
 
 def doMain():
     app = QApplication(sys.argv)
