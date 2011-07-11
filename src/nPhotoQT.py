@@ -1,7 +1,4 @@
-'''
-Created on 02/07/2011
-@author g3rg
-'''
+''' Created on 02/07/2011 @author g3rg '''
 
 import os
 import sys
@@ -18,6 +15,8 @@ from PyQt4.QtGui import QApplication, QLabel, QImage, QMainWindow, QPixmap, QAct
             QTreeWidgetItem, QSplitter, QScrollArea, QPalette, QSizePolicy, QFrame, QBoxLayout
 
 __version__ = "0.1.0"
+
+EXIF_TAGS= ('DateTimeOriginal','ExifImageWidth','Make','Model','Orientation','DateTime','ExifImageHeight')
 
 class Photo():
     srcPath = None
@@ -239,7 +238,6 @@ class NPhotoMainWindow(QMainWindow):
         else:
             album = self.rootAlbum
             for albumName in nodes[1:]:
-                print "Hunting for %s" % albumName
                 album = album.albums[unicode(albumName)]
 
             return album
@@ -348,12 +346,13 @@ class NPhotoMainWindow(QMainWindow):
         self.status.showMessage("Library successfully loaded", 5000)
 
     def loadExif(self, path):
-        img = Image.open("/home/g3rgz/1228465149000.jpg")
+        img = Image.open(path)
         info = img._getexif()
         tags = {}
         for tag, value in info.items():
             decoded = ExifTags.TAGS.get(tag,tag)
-            tags[decoded] = value
+            if decoded in EXIF_TAGS:
+                tags[decoded] = unicode(value)
 
         return tags
 
@@ -527,7 +526,7 @@ class NPhotoMainWindow(QMainWindow):
                     if not os.path.exists(dest):
                         QMessageBox.warming(self, "Import Failed", "The file <%s> was not imported properly, aborting import" % (path))
                         return
-                    exif = self.loadExif(path)
+                    exif = self.loadExif(unicode(path))
                     self.buildSideCarFile(path, dest, comments, keywords, exif)
                     # add file info to DB
                 
@@ -544,8 +543,11 @@ class NPhotoMainWindow(QMainWindow):
         f.write("comment=%s\n" % (comments))
         f.write("exif:\n")
         if exif:
-            for tag, value in exif:
-                f.write(tag, "=", value)
+            for tag in exif.keys():
+                f.write(tag)
+                f.write("=")
+                f.write(exif[tag])
+                f.write("\n")
         f.close()
         # read info from file and populate sidecar
 
