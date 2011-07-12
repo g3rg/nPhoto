@@ -28,7 +28,7 @@
                 [x] load the photos from current album
         [x] scale images
         [x] read exif data and save to sidecarfile
-        [ ] store date and orientation flag in  photo object
+        [x] store date and orientation flag in  photo object
         [ ] order photos by date/time taken
 	[ ] next / prev page buttons
         [ ] select individual photo and edit

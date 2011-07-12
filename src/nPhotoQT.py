@@ -5,9 +5,6 @@ import sys
 import shutil
 import datetime
 
-import Image
-import ExifTags
-
 from PyQt4.QtCore import Qt, QTime, QTimer, QVariant, QPoint, QSize, SIGNAL, SLOT
 from PyQt4.QtGui import QApplication, QLabel, QImage, QMainWindow, QPixmap, QGridLayout, QLineEdit, \
      QMessageBox, QFileDialog, QTreeWidget, QTreeWidgetItem, QSplitter, QScrollArea, QPalette, \
@@ -15,7 +12,7 @@ from PyQt4.QtGui import QApplication, QLabel, QImage, QMainWindow, QPixmap, QGri
 
 from models import Photo, Album
 from dialogs import EditPhotoDialog, ImportMetadataDialog, SettingsDialog
-from fileutils import copyFileIncludingDirectories
+from fileutils import copyFileIncludingDirectories, loadExif
 from qtutils import getSettingStr, getSettingQVar, saveSetting, addActions, createAction
 
 __version__ = "0.1.0"
@@ -220,24 +217,15 @@ class NPhotoMainWindow(QMainWindow):
         if self.rootAlbum == None:
             self.rootAlbum = Album(name="Library")
 
+        self.refreshTree()
+        
+        self.status.showMessage("Library successfully loaded", 5000)
+
+    def refreshTree(self):
         self.tree.clear()
         node = QTreeWidgetItem(self.tree, ["Library"])
         self.buildTree(node, self.rootAlbum)
-
         self.tree.setCurrentItem(node)
-
-        self.status.showMessage("Library successfully loaded", 5000)
-
-    def loadExif(self, path):
-        img = Image.open(path)
-        info = img._getexif()
-        tags = {}
-        for tag, value in info.items():
-            decoded = ExifTags.TAGS.get(tag,tag)
-            if decoded in EXIF_TAGS:
-                tags[decoded] = unicode(value)
-
-        return tags
 
     def loadAlbum(self, path, title = None):
         album = Album()
@@ -252,7 +240,7 @@ class NPhotoMainWindow(QMainWindow):
 
         files = os.listdir(path)
         files.sort()
-        
+
         for fl in files:
             if not os.path.isfile(path + os.sep + fl):
                 album.albums[fl] = self.loadAlbum(path + os.sep + fl)
@@ -260,44 +248,19 @@ class NPhotoMainWindow(QMainWindow):
                 if self.isImageFile(path + os.sep + fl):
                     ph = None
                     if os.path.exists(path + os.sep + fl + ".sidecar"):
-                        ph = self.loadSideCarFile(path + os.sep + fl + ".sidecar")
+                        ph = Photo.loadSideCarFile(path + os.sep + fl + ".sidecar")
                     else:
                         ph = Photo()
                         ph.comment = ""
                         ph.keywords = {}
                         ph.srcPath = None
-                        exif = self.loadExif(path + os.sep + fl)
-                        self.buildSideCarFile(path + os.sep + fl + ".sidecar", dest, ph.comment, ph.keywords)
-                            
-                    ph.path = path + os.sep + fl
-                    print ph.path
-                    album.photos.append(ph)
-                        
-        return album
+                        exif = loadExif(path + os.sep + fl, EXIF_TAGS)
+                        ph.setExif(exif)
+                        ph.buildSideCarFile(dest)
 
-    def loadSideCarFile(self, path):
-        ph = Photo()
-        f = open(path)
-        for line in f:
-            if line.startswith("originalpath="):
-                ph.srcPath = line[len("originalpath="):]
-            elif line.startswith("keywords="):
-                keywords = line[len("keywords="):]
-                for keyword in keywords.split(","):
-                    ph.keywords.append(keyword.strip())
-            elif line.startswith("comment="):
-                ph.comment = line[len("comment="):]
-            else:
-                # EXIF
-                if line.startswith("DateTimeOriginal="):
-                    ph.date = line[len("DateTimeOriginal="):]
-                elif line.startswith("DateTime=") and not ph.date:
-                    ph.date = line[len("DateTime="):]
-                elif line.startswith("Orientation="):
-                    ph.orientation = line[len("Orientation"):]
-            
-        f.close()
-        return ph
+                    ph.path = path + os.sep + fl
+                    album.photos.append(ph)                        
+        return album
 
     def loadQPixMap(self, fname):
         qpx = None
@@ -390,7 +353,7 @@ class NPhotoMainWindow(QMainWindow):
             nonDupes = self.removeDuplicates(paths, importFrom, albumpath)
             numDuplicates = numTotal - len(nonDupes)
             
-            if QMessageBox.question(self, "Import", "Out of %d photos found, %d look to be duplicates. Continue with import?"
+            if QMessageBox.question(self, "Import", "Out of %d files found, %d look to be duplicates. Continue with import?"
                                     % (numTotal,  numDuplicates), QMessageBox.Yes|QMessageBox.No) == QMessageBox.Yes:
                 
                 saveSetting("Paths/LastImport", importFrom)
@@ -403,28 +366,19 @@ class NPhotoMainWindow(QMainWindow):
                     if not os.path.exists(dest):
                         QMessageBox.warming(self, "Import Failed", "The file <%s> was not imported properly, aborting import" % (path))
                         return
-                    exif = self.loadExif(unicode(path))
-                    self.buildSideCarFile(path, dest, comments, keywords, exif)
-                    # add file info to DB
-                
+                    if self.isImageFile(path):
+                        exif = loadExif(unicode(path), EXIF_TAGS)
+                        ph = Photo()
+                        ph.srcPath = path
+                        ph.comment = comments
+                        ph.keywords = keywords
+                        ph.setExif(exif)
+
+                        ph.buildSideCarFile(dest)
+                        
                 QMessageBox.information(self, "Import", "Import completed")
 
                 self.loadLibrary()
-
-    def buildSideCarFile(self, path, dest, comments, keywords, exif=None):
-        sidecarFilePath = dest + os.extsep + "sidecar"
-        f = open(sidecarFilePath, "w")
-        f.write("originalpath=" + path + "\n")
-        f.write("keywords=%s\n" % (keywords))
-        f.write("comment=%s\n" % (comments))
-        f.write("exif:\n")
-        if exif:
-            for tag in exif.keys():
-                f.write(tag)
-                f.write("=")
-                f.write(exif[tag])
-                f.write("\n")
-        f.close()
             
     def buildLibPath(self, importFrom, path, albumpath):
         relPath = path[len(importFrom):]

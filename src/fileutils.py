@@ -6,6 +6,9 @@ Created on 12/07/2011
 import shutil
 import os
 
+import Image
+import ExifTags
+
 def copyFileIncludingDirectories(src, dest):
     dirs = dest.split(os.sep)
     dirs = dirs[0:len(dirs)-1]
@@ -16,3 +19,15 @@ def copyFileIncludingDirectories(src, dest):
             os.mkdir(d)
  
     shutil.copyfile(src, dest)
+
+
+def loadExif(path, exifTags):
+    img = Image.open(path)
+    info = img._getexif()
+    tags = {}
+    for tag, value in info.items():
+        decoded = ExifTags.TAGS.get(tag,tag)
+        if decoded in exifTags:
+            tags[decoded] = unicode(value)
+
+    return tags
