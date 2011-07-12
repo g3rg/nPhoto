@@ -58,15 +58,18 @@ class ImportMetadataDialog(QDialog):
         self.setLayout(grid)
 
 class SettingsDialog(QDialog):
-    def __init__(self, parent, libPath, backupPaths, extensions):
+    def __init__(self, parent, libPath, backupPaths, extensions, extensionsOther):
         super(SettingsDialog, self).__init__(parent)
 
         libPathLabel = QLabel("Library Path")
         self.libPathEdit = QLineEdit(libPath)
         backupPathsLabel = QLabel("Backup Paths")
         self.backupPathsEdit = QLineEdit(backupPaths)
-        fileExtensionLabel = QLabel("File Extensions")
+        fileExtensionLabel = QLabel("Image File Extensions")
         self.fileExtensionEdit = QLineEdit(extensions)
+        fileExtensionOtherLabel = QLabel("Other Extensions")
+        self.fileExtensionOtherEdit = QLineEdit(extensionsOther)
+
         
         buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         
@@ -82,6 +85,8 @@ class SettingsDialog(QDialog):
         grid.addWidget(self.backupPathsEdit, 1, 1)
         grid.addWidget(fileExtensionLabel, 2, 0)
         grid.addWidget(self.fileExtensionEdit, 2, 1)
+        grid.addWidget(fileExtensionOtherLabel, 3, 0)
+        grid.addWidget(self.fileExtensionOtherEdit, 3, 1)
         
-        grid.addWidget(buttonBox, 3, 0, 1, 2)
+        grid.addWidget(buttonBox, 4, 0, 1, 2)
         self.setLayout(grid)

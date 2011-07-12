@@ -8,20 +8,22 @@ import datetime
 import Image
 import ExifTags
 
-
 from PyQt4.QtCore import Qt, QTime, QTimer, QVariant, QPoint, QSize, SIGNAL, SLOT
-from PyQt4.QtGui import QApplication, QLabel, QImage, QMainWindow, QPixmap, QAction, \
-            QIcon, QDialog, QDialogButtonBox, QGridLayout, QLineEdit, QMessageBox, QFileDialog, QTreeWidget, \
-            QTreeWidgetItem, QSplitter, QScrollArea, QPalette, QSizePolicy, QFrame, QBoxLayout
+from PyQt4.QtGui import QApplication, QLabel, QImage, QMainWindow, QPixmap, QGridLayout, QLineEdit, \
+     QMessageBox, QFileDialog, QTreeWidget, QTreeWidgetItem, QSplitter, QScrollArea, QPalette, \
+     QSizePolicy, QFrame, QBoxLayout
 
 from models import Photo, Album
 from dialogs import EditPhotoDialog, ImportMetadataDialog, SettingsDialog
 from fileutils import copyFileIncludingDirectories
-from qtutils import getSettingStr, getSettingQVar, saveSetting
+from qtutils import getSettingStr, getSettingQVar, saveSetting, addActions, createAction
 
 __version__ = "0.1.0"
 
-EXIF_TAGS= ('DateTimeOriginal','ExifImageWidth','Make','Model','Orientation','DateTime','ExifImageHeight')
+EXIF_TAGS = ('DateTimeOriginal','ExifImageWidth','Make','Model','Orientation','DateTime','ExifImageHeight')
+BROWSER_GRID_WIDTH = 4
+BROWSER_GRID_HEIGHT = 3
+
 
 class NPhotoMainWindow(QMainWindow):
     rootAlbum = None
@@ -33,19 +35,19 @@ class NPhotoMainWindow(QMainWindow):
         self.status.setSizeGripEnabled(False)
 
         fileMenu = self.menuBar().addMenu("&File")
-        fileEditAction = self.createAction("&Edit", self.doEdit, "Ctrl-E", "fileedit", "Edit photo details")
-        fileImportAction = self.createAction("&Import", self.doImport, "Ctrl-I", "fileimport", "Import photos into your library")
-        fileRescanLibraryAction = self.createAction("&Rescan", self.doRescan, "Ctrl-R", "filerescan", "Rescan library folder and update sidecar files")
-        fileBackupAction = self.createAction("&Backup", self.doBackup, "Ctrl-B", "filebkup", "Backup your library")
-        fileSettingsAction = self.createAction("&Settings", self.doSettings, "Ctrl-S", "filesettings", "Settings")
-        fileQuitAction = self.createAction("&Quit", self.close, "Ctrl+Q", "filequit", "Close the application")
+        fileEditAction = createAction(self, "&Edit", self.doEdit, "Ctrl-E", "fileedit", "Edit photo details")
+        fileImportAction = createAction(self, "&Import", self.doImport, "Ctrl-I", "fileimport", "Import photos into your library")
+        fileRescanLibraryAction = createAction(self, "&Rescan", self.doRescan, "Ctrl-R", "filerescan", "Rescan library folder and update sidecar files")
+        fileBackupAction = createAction(self, "&Backup", self.doBackup, "Ctrl-B", "filebkup", "Backup your library")
+        fileSettingsAction = createAction(self, "&Settings", self.doSettings, "Ctrl-S", "filesettings", "Settings")
+        fileQuitAction = createAction(self, "&Quit", self.close, "Ctrl+Q", "filequit", "Close the application")
 
         helpMenu = self.menuBar().addMenu("&Help")
-        helpAboutAction = self.createAction("&About", self.doAbout, None, "helpabout", "About nPhoto")
+        helpAboutAction = createAction(self, "&About", self.doAbout, None, "helpabout", "About nPhoto")
         
-        self.addActions(fileMenu, (fileEditAction, fileImportAction, fileRescanLibraryAction, fileBackupAction,
+        addActions(fileMenu, (fileEditAction, fileImportAction, fileRescanLibraryAction, fileBackupAction,
                                        fileSettingsAction, None, fileQuitAction))
-        self.addActions(helpMenu, (helpAboutAction,))
+        addActions(helpMenu, (helpAboutAction,))
     
         size = getSettingQVar("MainWindow/Size", QSize(600,500)).toSize()
         self.resize(size)
@@ -57,6 +59,7 @@ class NPhotoMainWindow(QMainWindow):
         self.controlFrame = QFrame()
         self.controlLayout = QBoxLayout(QBoxLayout.TopToBottom)
 
+        #TODO Make this a combo box that populates the tree by date or by folder
         self.viewByCombo = QLabel("PLACEHOLDER")
         
         self.tree = QTreeWidget()
@@ -77,9 +80,9 @@ class NPhotoMainWindow(QMainWindow):
         self.browserGrid = QGridLayout()
 
         self.imageLabels = []
-        for row in range(0,3):
+        for row in range(0,BROWSER_GRID_HEIGHT):
             self.imageLabels.append([])
-            for col in range(0,3):
+            for col in range(0,BROWSER_GRID_WIDTH):
                 
                 self.imageLabels[row].append(QLabel())
                 self.imageLabels[row][col].setBackgroundRole(QPalette.Base)
@@ -90,8 +93,6 @@ class NPhotoMainWindow(QMainWindow):
                 self.browserGrid.addWidget(self.imageLabels[row][col],row,col)
 
         self.browserFrame.setLayout(self.browserGrid)
-
-
 
         self.mainSplitter = QSplitter(Qt.Horizontal)
         self.mainSplitter.addWidget(self.controlFrame)
@@ -110,13 +111,6 @@ class NPhotoMainWindow(QMainWindow):
     def doRescan(self):
         pass
 
-    def addActions(self, target, actions):
-        for action in actions:
-            if action is None:
-                target.addSeparator()
-            else:
-                target.addAction(action)
-
     def treeSelection(self):
         curr = self.tree.currentItem()
         path = curr.data(0,0).toString()
@@ -134,12 +128,13 @@ class NPhotoMainWindow(QMainWindow):
         self.changeAlbums()
 
     def changeAlbums(self):
-        for row in range(0, 3):
-            for col in range(0, 3):
-                if len(self.currentAlbum.photos)<= (row*3 + col):
+        for row in range(0, BROWSER_GRID_HEIGHT):
+            for col in range(0, BROWSER_GRID_WIDTH):
+                if len(self.currentAlbum.photos)<= (row*BROWSER_GRID_WIDTH + col):
                     self.imageLabels[row][col].setPixmap(QPixmap())
                 else:
-                    self.imageLabels[row][col].setPixmap(self.loadQPixMap(self.currentAlbum.photos[row*3+col].path))
+                    self.imageLabels[row][col].setPixmap(self.loadQPixMap(
+                                self.currentAlbum.photos[row*BROWSER_GRID_WIDTH+col].path))
                     self.imageLabels[row][col].adjustSize()
                                                    
     def getAlbum(self, path):
@@ -197,33 +192,18 @@ class NPhotoMainWindow(QMainWindow):
         libPath = getSettingStr("Paths/Library", "")
         backupPaths = getSettingStr("Paths/Backup", "")
         fileExt = getSettingStr("FileExtensions", "jpg, CR2")
+        fileExtOther = getSettingStr("FileExtensionsOther", "mov, avi")
         
-        dialog = SettingsDialog(self, libPath, backupPaths, fileExt)
+        
+        dialog = SettingsDialog(self, libPath, backupPaths, fileExt, fileExtOther)
         if dialog.exec_():
             saveSetting("Paths/Library", dialog.libPathEdit.text())
             saveSetting("Paths/Backup", dialog.backupPathsEdit.text())
             saveSetting("FileExtensions", dialog.fileExtensionEdit.text())
+            saveSetting("FileExtensionsOther", dialog.fileExtensionOtherEdit.text())
             
             self.status.showMessage("Settings updated", 5000)
             
-
-    def createAction(self, text, slot=None, shortcut=None, icon=None, tip=None, checkable=False, signal="triggered()"):
-        action = QAction(text, self)
-        if icon is not None:
-            action.setIcon(QIcon(":/%s.png" % icon))
-        if shortcut is not None:
-            action.setShortcut(shortcut)
-        if tip is not None:
-            action.setToolTip(tip)
-            action.setStatusTip(tip)
-        if slot is not None:
-            self.connect(action, SIGNAL(signal), slot)
-        if checkable:
-            action.setCheckable(True)
-        return action
-
-    def loadInitialPhoto(self):
-        pass
 
     def buildTree(self, parentNode, parentAlbum):
         for name in parentAlbum.albums:
@@ -245,7 +225,6 @@ class NPhotoMainWindow(QMainWindow):
         self.buildTree(node, self.rootAlbum)
 
         self.tree.setCurrentItem(node)
-        self.loadInitialPhoto()
 
         self.status.showMessage("Library successfully loaded", 5000)
 
@@ -260,7 +239,7 @@ class NPhotoMainWindow(QMainWindow):
 
         return tags
 
-    def loadAlbum(self, path, title = None, regenSideCar = False):
+    def loadAlbum(self, path, title = None):
         album = Album()
         if title not in (None, ''):
             album.name = title
@@ -270,30 +249,29 @@ class NPhotoMainWindow(QMainWindow):
         album.albums = {}
         album.photos = []
         album.path = path
+
+        files = os.listdir(path)
+        files.sort()
         
-        for fl in os.listdir(path):
+        for fl in files:
             if not os.path.isfile(path + os.sep + fl):
                 album.albums[fl] = self.loadAlbum(path + os.sep + fl)
             else:
                 if self.isImageFile(path + os.sep + fl):
-                    if not regenSideCar:
-                        ph = None
-                        if os.path.exists(path + os.sep + fl + ".sidecar"):
-                            ph = self.loadSideCarFile(path + os.sep + fl + ".sidecar")
-                        else:
-                            ph = Photo()
-                            ph.comment = ""
-                            ph.keywords = {}
-                            ph.srcPath = None
-                            exif = self.loadExif(path + os.sep + fl)
-                            self.buildSideCarFile(path + os.sep + fl + ".sidecar", dest, ph.comment, ph.keywords)
-                    
-                            
-                        ph.path = path + os.sep + fl
-                        print ph.path
-                        album.photos.append(ph)
+                    ph = None
+                    if os.path.exists(path + os.sep + fl + ".sidecar"):
+                        ph = self.loadSideCarFile(path + os.sep + fl + ".sidecar")
                     else:
-                        QMessageBox.information(self, "Loading", "Regenerating of sidecar information not implemented yet")
+                        ph = Photo()
+                        ph.comment = ""
+                        ph.keywords = {}
+                        ph.srcPath = None
+                        exif = self.loadExif(path + os.sep + fl)
+                        self.buildSideCarFile(path + os.sep + fl + ".sidecar", dest, ph.comment, ph.keywords)
+                            
+                    ph.path = path + os.sep + fl
+                    print ph.path
+                    album.photos.append(ph)
                         
         return album
 
@@ -462,9 +440,15 @@ class NPhotoMainWindow(QMainWindow):
                 return True
         return False
 
-    def isVideoFile(self, filepath):
-        #TODO Implement list of accepted video extensions, and then work out what to do with them on import!
-        pass
+    def isOtherManagedFile(self, filepath):
+        #TODO Implement list of other files to import into lib folders and to backup
+        extensionList = unicode(getSettingStr("FileExtensionsOther")).split(",")
+        for extension in extensionList:
+            if unicode(filepath).upper().endswith(unicode(extension).upper()):
+                return True
+        return False
+    
+
         
     def removeDuplicates(self, paths, importFrom, albumpath):
         nonDupes = []
@@ -487,6 +471,9 @@ class NPhotoMainWindow(QMainWindow):
             else:
                 if self.isImageFile(fullpath):
                     paths.append(fullpath)
+                elif self.isOtherManagedFile(fullpath):
+                    paths.append(fullpath)
+                    
         return paths
 
     def closeEvent(self, event):
