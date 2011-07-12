@@ -9,7 +9,7 @@ import Image
 import ExifTags
 
 
-from PyQt4.QtCore import Qt, QTime, QTimer, QSettings, QVariant, QPoint, QSize, SIGNAL, SLOT
+from PyQt4.QtCore import Qt, QTime, QTimer, QVariant, QPoint, QSize, SIGNAL, SLOT
 from PyQt4.QtGui import QApplication, QLabel, QImage, QMainWindow, QPixmap, QAction, \
             QIcon, QDialog, QDialogButtonBox, QGridLayout, QLineEdit, QMessageBox, QFileDialog, QTreeWidget, \
             QTreeWidgetItem, QSplitter, QScrollArea, QPalette, QSizePolicy, QFrame, QBoxLayout
@@ -17,6 +17,7 @@ from PyQt4.QtGui import QApplication, QLabel, QImage, QMainWindow, QPixmap, QAct
 from models import Photo, Album
 from dialogs import EditPhotoDialog, ImportMetadataDialog, SettingsDialog
 from fileutils import copyFileIncludingDirectories
+from qtutils import getSettingStr, getSettingQVar, saveSetting
 
 __version__ = "0.1.0"
 
@@ -46,12 +47,11 @@ class NPhotoMainWindow(QMainWindow):
                                        fileSettingsAction, None, fileQuitAction))
         self.addActions(helpMenu, (helpAboutAction,))
     
-        settings = QSettings()
-        size = settings.value("MainWindow/Size", QVariant(QSize(600,500))).toSize()
+        size = getSettingQVar("MainWindow/Size", QSize(600,500)).toSize()
         self.resize(size)
-        position = settings.value("MainWindow/Position", QVariant(QPoint(0,0))).toPoint()
+        position = getSettingQVar("MainWindow/Position", QPoint(0,0)).toPoint()
         self.move(position)
-        self.restoreState(settings.value("MainWindow/State").toByteArray())
+        self.restoreState(getSettingQVar("MainWindow/State").toByteArray())
         self.setWindowTitle("nPhoto")
 
         self.controlFrame = QFrame()
@@ -100,9 +100,9 @@ class NPhotoMainWindow(QMainWindow):
         
         self.setCentralWidget(self.mainSplitter)
 
-        self.mainSplitter.restoreState(settings.value("MainWindow/Splitter").toByteArray())
+        self.mainSplitter.restoreState(getSettingQVar("MainWindow/Splitter").toByteArray())
 
-        if settings.value("Paths/Library").toString() not in (None, ''):
+        if getSettingStr("Paths/Library") not in (None, ''):
             QTimer.singleShot(0, self.loadLibrary)
         else:
             self.status.showMessage("No Library Path in settings", 10000)
@@ -152,11 +152,10 @@ class NPhotoMainWindow(QMainWindow):
                 album = album.albums[unicode(albumName)]
 
             return album
-
         
     def doBackup(self):
-        libDir = self.getSetting("Paths/Library")
-        bkupPaths = self.getSetting("Paths/Backup")
+        libDir = getSettingStr("Paths/Library")
+        bkupPaths = getSettingStr("Paths/Backup")
         
         if libDir in (None,  ''):
             QMessageBox.warning(self, "Backup Failed", "You need to specify a library directory in your settings")
@@ -195,17 +194,15 @@ class NPhotoMainWindow(QMainWindow):
             print "Editing!"
 
     def doSettings(self):
-        settings = QSettings()
-        libPath = settings.value("Paths/Library", "").toString()
-        backupPaths = settings.value("Paths/Backup", "").toString()
-        fileExt = settings.value("FileExtensions", "jpg, CR2").toString()
+        libPath = getSettingStr("Paths/Library", "")
+        backupPaths = getSettingStr("Paths/Backup", "")
+        fileExt = getSettingStr("FileExtensions", "jpg, CR2")
         
         dialog = SettingsDialog(self, libPath, backupPaths, fileExt)
         if dialog.exec_():
-            settings = QSettings()
-            settings.setValue("Paths/Library", QVariant(dialog.libPathEdit.text()))
-            settings.setValue("Paths/Backup", QVariant(dialog.backupPathsEdit.text()))
-            settings.setValue("FileExtensions", QVariant(dialog.fileExtensionEdit.text()))
+            saveSetting("Paths/Library", dialog.libPathEdit.text())
+            saveSetting("Paths/Backup", dialog.backupPathsEdit.text())
+            saveSetting("FileExtensions", dialog.fileExtensionEdit.text())
             
             self.status.showMessage("Settings updated", 5000)
             
@@ -238,7 +235,7 @@ class NPhotoMainWindow(QMainWindow):
     def loadLibrary(self):
         self.status.showMessage("Loading Photo Library")
 
-        self.rootAlbum = self.loadAlbum(self.getSetting("Paths/Library"), "Library")
+        self.rootAlbum = self.loadAlbum(getSettingStr("Paths/Library"), "Library")
 
         if self.rootAlbum == None:
             self.rootAlbum = Album(name="Library")
@@ -314,11 +311,11 @@ class NPhotoMainWindow(QMainWindow):
                 ph.comment = line[len("comment="):]
             else:
                 # EXIF
-                if line.startsWith("DateTimeOriginal="):
+                if line.startswith("DateTimeOriginal="):
                     ph.date = line[len("DateTimeOriginal="):]
-                elif line.startsWith("DateTime=") and not ph.date:
+                elif line.startswith("DateTime=") and not ph.date:
                     ph.date = line[len("DateTime="):]
-                elif line.startsWith("Orientation="):
+                elif line.startswith("Orientation="):
                     ph.orientation = line[len("Orientation"):]
             
         f.close()
@@ -360,9 +357,8 @@ class NPhotoMainWindow(QMainWindow):
 
 
     def doImport(self):
-        settings = QSettings()
-        libPath = settings.value("Paths/Library").toString()
-        fileExt = settings.value("FileExtensions").toString()
+        libPath = getSettingStr("Paths/Library")
+        fileExt = getSettingStr("FileExtensions")
         
         if libPath in (None,  ''):
             QMessageBox.warning(self, "Import Failed",  "You need to specify a library directory in your settings")
@@ -376,7 +372,7 @@ class NPhotoMainWindow(QMainWindow):
             QMessageBox.warning(self, "Import Failed", "You need to specify file extensions to manage in your settings")
             return
 
-        lastImport = self.getSetting("Paths/LastImport")
+        lastImport = getSettingStr("Paths/LastImport")
 
         importFrom = QFileDialog.getExistingDirectory(self, "Choose a Path to Import From", lastImport)
         
@@ -419,7 +415,7 @@ class NPhotoMainWindow(QMainWindow):
             if QMessageBox.question(self, "Import", "Out of %d photos found, %d look to be duplicates. Continue with import?"
                                     % (numTotal,  numDuplicates), QMessageBox.Yes|QMessageBox.No) == QMessageBox.Yes:
                 
-                settings.setValue("Paths/LastImport", QVariant(importFrom))
+                saveSetting("Paths/LastImport", importFrom)
                 
                 for path in nonDupes:
                     dest = self.buildLibPath(importFrom, path, albumpath)
@@ -454,18 +450,13 @@ class NPhotoMainWindow(QMainWindow):
             
     def buildLibPath(self, importFrom, path, albumpath):
         relPath = path[len(importFrom):]
-        libPath = self.getSetting("Paths/Library") + os.sep + albumpath + relPath
+        libPath = getSettingStr("Paths/Library") + os.sep + albumpath + relPath
         
         return libPath
 
-
-    def getSetting(self, setting, default=None):
-        settings = QSettings()
-        return unicode(settings.value(setting, default).toString())
-
         
     def isImageFile(self, filepath):
-        extensionList = unicode(self.getSetting("FileExtensions")).split(",")
+        extensionList = unicode(getSettingStr("FileExtensions")).split(",")
         for extension in extensionList:
             if unicode(filepath).upper().endswith(unicode(extension).upper()):
                 return True
@@ -486,6 +477,7 @@ class NPhotoMainWindow(QMainWindow):
         return nonDupes
 
     def buildFileList(self, importFrom):
+        #TODO Can probably be done with Glob or whatever it is?
         paths = []
         for f in os.listdir(importFrom):
             fullpath = importFrom + os.sep + f
@@ -498,11 +490,10 @@ class NPhotoMainWindow(QMainWindow):
         return paths
 
     def closeEvent(self, event):
-        settings = QSettings()
-        settings.setValue("MainWindow/Size", QVariant(self.size()))
-        settings.setValue("MainWindow/Position", QVariant(self.pos()))
-        settings.setValue("MainWindow/State", QVariant(self.saveState()))
-        settings.setValue("MainWindow/Splitter", QVariant(self.mainSplitter.saveState()))
+        saveSetting("MainWindow/Size", self.size())
+        saveSetting("MainWindow/Position", self.pos())
+        saveSetting("MainWindow/State", self.saveState())
+        saveSetting("MainWindow/Splitter", self.mainSplitter.saveState())
 
     def doAbout(self):
         QMessageBox.about(self, "About nPhoto",

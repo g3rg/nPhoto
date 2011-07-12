@@ -6,7 +6,7 @@ Created on 12/07/2011
 import shutil
 import os
 
-def copyFileIncludingDirectories(self, src, dest):
+def copyFileIncludingDirectories(src, dest):
     dirs = dest.split(os.sep)
     dirs = dirs[0:len(dirs)-1]
     d = ""
