@@ -29,9 +29,15 @@
         [x] scale images
         [x] read exif data and save to sidecarfile
         [x] store date and orientation flag in  photo object
-        [ ] order photos by date/time taken
-	[ ] next / prev page buttons
-        [ ] select individual photo and edit
+        [x] order photos by date/time taken
+	[x] next / prev page buttons
+        [ ] dbl-click to open in popup edit dialog
+            [ ] handle dbl-click
+            [ ] pass Photo to dialog
+            [ ] comments, keywords, ok, cancel
+            [ ] show image as big as possible
+            [ ] update!
+ 
 	[ ] multi-select
 	[ ] delete selected
 	[ ] autorotate based on EXIF data

@@ -8,7 +8,7 @@ import datetime
 from PyQt4.QtCore import Qt, QTime, QTimer, QVariant, QPoint, QSize, SIGNAL, SLOT
 from PyQt4.QtGui import QApplication, QLabel, QImage, QMainWindow, QPixmap, QGridLayout, QLineEdit, \
      QMessageBox, QFileDialog, QTreeWidget, QTreeWidgetItem, QSplitter, QScrollArea, QPalette, \
-     QSizePolicy, QFrame, QBoxLayout
+     QSizePolicy, QFrame, QBoxLayout, QPushButton
 
 from models import Photo, Album
 from dialogs import EditPhotoDialog, ImportMetadataDialog, SettingsDialog
@@ -20,11 +20,12 @@ __version__ = "0.1.0"
 EXIF_TAGS = ('DateTimeOriginal','ExifImageWidth','Make','Model','Orientation','DateTime','ExifImageHeight')
 BROWSER_GRID_WIDTH = 4
 BROWSER_GRID_HEIGHT = 3
-
+BROWSER_THUMBS_PER_PAGE = BROWSER_GRID_WIDTH * BROWSER_GRID_HEIGHT
 
 class NPhotoMainWindow(QMainWindow):
     rootAlbum = None
-
+    currentPage = 0
+    
     def __init__(self, parent=None):
         super(NPhotoMainWindow, self).__init__(parent)
 
@@ -89,6 +90,18 @@ class NPhotoMainWindow(QMainWindow):
 
                 self.browserGrid.addWidget(self.imageLabels[row][col],row,col)
 
+        self.prevPage = QPushButton("Prev")
+        self.pageInfoLabel = QLabel("Page 0 of 0")
+        self.pageInfoLabel.setAlignment(Qt.AlignCenter)
+        self.nextPage = QPushButton("Next")
+
+        self.prevPage.clicked.connect(self.goPreviousPage)
+        self.nextPage.clicked.connect(self.goNextPage)
+        
+        self.browserGrid.addWidget(self.prevPage, row+1, 0)
+        self.browserGrid.addWidget(self.pageInfoLabel, row+1, 1)
+        self.browserGrid.addWidget(self.nextPage, row+1, 2)
+
         self.browserFrame.setLayout(self.browserGrid)
 
         self.mainSplitter = QSplitter(Qt.Horizontal)
@@ -125,14 +138,60 @@ class NPhotoMainWindow(QMainWindow):
         self.changeAlbums()
 
     def changeAlbums(self):
+        if len(self.currentAlbum.photos) == 0:
+            self.currentPage = 0
+        else:
+            self.currentPage = 1
+        
         for row in range(0, BROWSER_GRID_HEIGHT):
             for col in range(0, BROWSER_GRID_WIDTH):
                 if len(self.currentAlbum.photos)<= (row*BROWSER_GRID_WIDTH + col):
                     self.imageLabels[row][col].setPixmap(QPixmap())
                 else:
-                    self.imageLabels[row][col].setPixmap(self.loadQPixMap(
-                                self.currentAlbum.photos[row*BROWSER_GRID_WIDTH+col].path))
+                    self.imageLabels[row][col].setPixmap(self.loadQPixMap(self.currentAlbum.photos[
+                            (BROWSER_THUMBS_PER_PAGE * (self.currentPage - 1)) + row*BROWSER_GRID_WIDTH+col]
+                                                                          .path))
                     self.imageLabels[row][col].adjustSize()
+
+        self.updatePageInfo()
+
+    def loadPageThumbs(self):
+        for row in range(0, BROWSER_GRID_HEIGHT):
+            for col in range(0, BROWSER_GRID_WIDTH):
+                if len(self.currentAlbum.photos)<= (
+                            (BROWSER_THUMBS_PER_PAGE * (self.currentPage - 1)) + row*BROWSER_GRID_WIDTH + col):
+                    self.imageLabels[row][col].setPixmap(QPixmap())
+                else:
+                    self.imageLabels[row][col].setPixmap(self.loadQPixMap(self.currentAlbum.photos[
+                            (BROWSER_THUMBS_PER_PAGE * (self.currentPage - 1)) + row*BROWSER_GRID_WIDTH+col]
+                                                                          .path))
+                    self.imageLabels[row][col].adjustSize()
+
+
+    def goPreviousPage(self):
+        if self.currentPage > 1:
+            self.currentPage -= 1
+            self.loadPageThumbs()
+            self.updatePageInfo()
+
+    def goNextPage(self):
+        if self.currentPage < self.getMaxPage():
+            self.currentPage += 1
+            self.loadPageThumbs()
+            self.updatePageInfo()
+
+    def getMaxPage(self):
+        totalPages = len(self.currentAlbum.photos) / BROWSER_THUMBS_PER_PAGE
+        if (len(self.currentAlbum.photos) % BROWSER_THUMBS_PER_PAGE) != 0:
+            totalPages += 1
+        return totalPages
+        
+
+    def updatePageInfo(self):
+        if self.currentPage == 0:
+            self.pageInfoLabel.setText("Page 0 of 0")
+        else:
+            self.pageInfoLabel.setText("Page %d of %d" % (self.currentPage, self.getMaxPage()))
                                                    
     def getAlbum(self, path):
         nodes = path.split(".")
@@ -241,6 +300,7 @@ class NPhotoMainWindow(QMainWindow):
         files = os.listdir(path)
         files.sort()
 
+        tmpPhotos = []
         for fl in files:
             if not os.path.isfile(path + os.sep + fl):
                 album.albums[fl] = self.loadAlbum(path + os.sep + fl)
@@ -259,7 +319,9 @@ class NPhotoMainWindow(QMainWindow):
                         ph.buildSideCarFile(dest)
 
                     ph.path = path + os.sep + fl
-                    album.photos.append(ph)                        
+                    tmpPhotos.append(ph)
+
+        album.photos = sorted(tmpPhotos, key = lambda photo: photo.date)
         return album
 
     def loadQPixMap(self, fname):
