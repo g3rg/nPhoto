@@ -26,14 +26,14 @@
 		[x] Thumbnail grid
                 [x] detect change of selection on tree!
                 [x] load the photos from current album
-        [x] scale images (thumbnails?)
-        [ ] read exif data and save to sidecarfile
-        [ ] store select exif in photo object
+        [x] scale images
+        [x] read exif data and save to sidecarfile
+        [ ] store date and orientation flag in  photo object
+        [ ] order photos by date/time taken
 	[ ] next / prev page buttons
         [ ] select individual photo and edit
 	[ ] multi-select
 	[ ] delete selected
-        [ ] order photos by date/time taken
 	[ ] autorotate based on EXIF data
 
 [ ] Compare View - select 2 photos and compare, allow deleting from here!

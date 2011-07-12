@@ -14,105 +14,13 @@ from PyQt4.QtGui import QApplication, QLabel, QImage, QMainWindow, QPixmap, QAct
             QIcon, QDialog, QDialogButtonBox, QGridLayout, QLineEdit, QMessageBox, QFileDialog, QTreeWidget, \
             QTreeWidgetItem, QSplitter, QScrollArea, QPalette, QSizePolicy, QFrame, QBoxLayout
 
+from models import Photo, Album
+from dialogs import EditPhotoDialog, ImportMetadataDialog, SettingsDialog
+from fileutils import copyFileIncludingDirectories
+
 __version__ = "0.1.0"
 
 EXIF_TAGS= ('DateTimeOriginal','ExifImageWidth','Make','Model','Orientation','DateTime','ExifImageHeight')
-
-class Photo():
-    srcPath = None
-    path = None
-    comment = None
-    keywords = []
-    
-class Album():
-    name = None
-    path = None
-    comment = None
-    albums = {}
-    photos = []
-
-    def __init__(self, name=None):
-        if name != None:
-            self.name = name
-
-class EditPhotoDialog(QDialog):
-    def __init__(self, parent, comment, keywords):
-        super(EditPhotoDialog, self).__init__(parent)
-        commentLabel = QLabel("Comment")
-        self.commentEdit = QLineEdit(comment)
-        keywordLabel = QLabel("Keyword")
-        self.keywordEdit = QLineEdit(keywords)
-        buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-
-        self.connect(buttonBox, SIGNAL("accepted()"), self, SLOT("accept()"))
-        self.connect(buttonBox, SIGNAL("rejected()"), self, SLOT("reject()"))
-        self.setWindowTitle("Edit Photo")
-
-        grid = QGridLayout()
-        grid.addWidget(commentLabel, 0, 0)
-        grid.addWidget(self.commentEdit, 0, 1)
-        grid.addWidget(keywordLabel, 1, 0)
-        grid.addWidget(self.keywordEdit, 1, 1)
-
-        grid.addWidget(buttonBox, 2, 0, 1, 2)
-        self.setLayout(grid)
-
-
-class ImportMetadataDialog(QDialog):
-    def __init__(self, parent):
-        super(ImportMetadataDialog, self).__init__(parent)
-        albumLabel = QLabel("Album")
-        self.albumEdit = QLineEdit()
-        commentsLabel = QLabel("Comments")
-        self.commentsEdit = QLineEdit()
-        keywordsLabel = QLabel("Keywords")
-        self.keywordsEdit = QLineEdit()
-
-        buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        
-        self.connect(buttonBox, SIGNAL("accepted()"), self, SLOT("accept()"))
-        self.connect(buttonBox, SIGNAL("rejected()"), self, SLOT("reject()"))
-        self.setWindowTitle("Import")
-
-        grid = QGridLayout()
-        grid.addWidget(albumLabel, 0, 0)
-        grid.addWidget(self.albumEdit, 0, 1)
-        grid.addWidget(commentsLabel, 1, 0)
-        grid.addWidget(self.commentsEdit, 1, 1)
-        grid.addWidget(keywordsLabel, 2, 0)
-        grid.addWidget(self.keywordsEdit, 2, 1)
-        
-        grid.addWidget(buttonBox, 3, 0, 1, 2)
-        self.setLayout(grid)
-
-class SettingsDialog(QDialog):
-    def __init__(self, parent, libPath, backupPaths, extensions):
-        super(SettingsDialog, self).__init__(parent)
-
-        libPathLabel = QLabel("Library Path")
-        self.libPathEdit = QLineEdit(libPath)
-        backupPathsLabel = QLabel("Backup Paths")
-        self.backupPathsEdit = QLineEdit(backupPaths)
-        fileExtensionLabel = QLabel("File Extensions")
-        self.fileExtensionEdit = QLineEdit(extensions)
-        
-        buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        
-        self.connect(buttonBox, SIGNAL("accepted()"), self, SLOT("accept()"))
-        self.connect(buttonBox, SIGNAL("rejected()"), self, SLOT("reject()"))
-        self.setWindowTitle("Settings")
-
-        grid = QGridLayout()
-        
-        grid.addWidget(libPathLabel, 0, 0)
-        grid.addWidget(self.libPathEdit, 0, 1)
-        grid.addWidget(backupPathsLabel, 1, 0)
-        grid.addWidget(self.backupPathsEdit, 1, 1)
-        grid.addWidget(fileExtensionLabel, 2, 0)
-        grid.addWidget(self.fileExtensionEdit, 2, 1)
-        
-        grid.addWidget(buttonBox, 3, 0, 1, 2)
-        self.setLayout(grid)
 
 class NPhotoMainWindow(QMainWindow):
     rootAlbum = None
@@ -126,6 +34,7 @@ class NPhotoMainWindow(QMainWindow):
         fileMenu = self.menuBar().addMenu("&File")
         fileEditAction = self.createAction("&Edit", self.doEdit, "Ctrl-E", "fileedit", "Edit photo details")
         fileImportAction = self.createAction("&Import", self.doImport, "Ctrl-I", "fileimport", "Import photos into your library")
+        fileRescanLibraryAction = self.createAction("&Rescan", self.doRescan, "Ctrl-R", "filerescan", "Rescan library folder and update sidecar files")
         fileBackupAction = self.createAction("&Backup", self.doBackup, "Ctrl-B", "filebkup", "Backup your library")
         fileSettingsAction = self.createAction("&Settings", self.doSettings, "Ctrl-S", "filesettings", "Settings")
         fileQuitAction = self.createAction("&Quit", self.close, "Ctrl+Q", "filequit", "Close the application")
@@ -133,7 +42,8 @@ class NPhotoMainWindow(QMainWindow):
         helpMenu = self.menuBar().addMenu("&Help")
         helpAboutAction = self.createAction("&About", self.doAbout, None, "helpabout", "About nPhoto")
         
-        self.addActions(fileMenu, (fileEditAction, fileImportAction, fileBackupAction, fileSettingsAction, None, fileQuitAction))
+        self.addActions(fileMenu, (fileEditAction, fileImportAction, fileRescanLibraryAction, fileBackupAction,
+                                       fileSettingsAction, None, fileQuitAction))
         self.addActions(helpMenu, (helpAboutAction,))
     
         settings = QSettings()
@@ -197,6 +107,9 @@ class NPhotoMainWindow(QMainWindow):
         else:
             self.status.showMessage("No Library Path in settings", 10000)
 
+    def doRescan(self):
+        pass
+
     def addActions(self, target, actions):
         for action in actions:
             if action is None:
@@ -222,9 +135,7 @@ class NPhotoMainWindow(QMainWindow):
 
     def changeAlbums(self):
         for row in range(0, 3):
-            #len(self.imageLabels)):
             for col in range(0, 3):
-                #len(self.imageLabels[row])):
                 if len(self.currentAlbum.photos)<= (row*3 + col):
                     self.imageLabels[row][col].setPixmap(QPixmap())
                 else:
@@ -316,10 +227,6 @@ class NPhotoMainWindow(QMainWindow):
 
     def loadInitialPhoto(self):
         pass
-        #self.loadFile("/home/g3rgz/1228465149000.jpg")
-        #for row in range(0,len(self.imageLabels)):
-        #    for col in range(0,len(self.imageLabels[row])):
-        #        self.imageLabels[row][col].adjustSize()
 
     def buildTree(self, parentNode, parentAlbum):
         for name in parentAlbum.albums:
@@ -336,9 +243,9 @@ class NPhotoMainWindow(QMainWindow):
         if self.rootAlbum == None:
             self.rootAlbum = Album(name="Library")
 
+        self.tree.clear()
         node = QTreeWidgetItem(self.tree, ["Library"])
         self.buildTree(node, self.rootAlbum)
-
 
         self.tree.setCurrentItem(node)
         self.loadInitialPhoto()
@@ -362,9 +269,6 @@ class NPhotoMainWindow(QMainWindow):
             album.name = title
         else:
             album.name = path[path.rfind(os.sep)+1:]
-            #Quick hack for windows!
-            #if album.name.startswith('\\'):
-            #    album.name = album.name[1:]
             
         album.albums = {}
         album.photos = []
@@ -384,7 +288,8 @@ class NPhotoMainWindow(QMainWindow):
                             ph.comment = ""
                             ph.keywords = {}
                             ph.srcPath = None
-                            #self.buildSideCarFile(path + os.sep + fl + ".sidecar", dest, ph.comment, ph.keywords)
+                            exif = self.loadExif(path + os.sep + fl)
+                            self.buildSideCarFile(path + os.sep + fl + ".sidecar", dest, ph.comment, ph.keywords)
                     
                             
                         ph.path = path + os.sep + fl
@@ -392,7 +297,7 @@ class NPhotoMainWindow(QMainWindow):
                         album.photos.append(ph)
                     else:
                         QMessageBox.information(self, "Loading", "Regenerating of sidecar information not implemented yet")
-
+                        
         return album
 
     def loadSideCarFile(self, path):
@@ -408,8 +313,13 @@ class NPhotoMainWindow(QMainWindow):
             elif line.startswith("comment="):
                 ph.comment = line[len("comment="):]
             else:
-                # EXIF?!?!?!
-                pass
+                # EXIF
+                if line.startsWith("DateTimeOriginal="):
+                    ph.date = line[len("DateTimeOriginal="):]
+                elif line.startsWith("DateTime=") and not ph.date:
+                    ph.date = line[len("DateTime="):]
+                elif line.startsWith("Orientation="):
+                    ph.orientation = line[len("Orientation"):]
             
         f.close()
         return ph
@@ -448,13 +358,6 @@ class NPhotoMainWindow(QMainWindow):
 
             self.status.showMessage(message, 10000)
 
-    def closeEvent(self, event):
-        settings = QSettings()
-        #TODO Store Last image file and album?
-        settings.setValue("MainWindow/Size", QVariant(self.size()))
-        settings.setValue("MainWindow/Position", QVariant(self.pos()))
-        settings.setValue("MainWindow/State", QVariant(self.saveState()))
-        settings.setValue("MainWindow/Splitter", QVariant(self.mainSplitter.saveState()))
 
     def doImport(self):
         settings = QSettings()
@@ -520,7 +423,7 @@ class NPhotoMainWindow(QMainWindow):
                 
                 for path in nonDupes:
                     dest = self.buildLibPath(importFrom, path, albumpath)
-                    self.copyFileIncludingDirectories(path, dest)
+                    copyFileIncludingDirectories(path, dest)
                     # TODO Handle copy failure exceptions!
                     
                     if not os.path.exists(dest):
@@ -531,7 +434,6 @@ class NPhotoMainWindow(QMainWindow):
                     # add file info to DB
                 
                 QMessageBox.information(self, "Import", "Import completed")
-                #verify all files again?
 
                 self.loadLibrary()
 
@@ -549,26 +451,12 @@ class NPhotoMainWindow(QMainWindow):
                 f.write(exif[tag])
                 f.write("\n")
         f.close()
-        # read info from file and populate sidecar
-
             
     def buildLibPath(self, importFrom, path, albumpath):
         relPath = path[len(importFrom):]
         libPath = self.getSetting("Paths/Library") + os.sep + albumpath + relPath
         
         return libPath
-
-    def copyFileIncludingDirectories(self, src, dest):
-        dirs = dest.split(os.sep)
-        dirs = dirs[0:len(dirs)-1]
-        d = ""
-        for dir in dirs:
-            d = d + dir + os.sep
-            if not os.path.exists(d):
-                os.mkdir(d)
-        
-        shutil.copyfile(src, dest)
-        pass
 
 
     def getSetting(self, setting, default=None):
@@ -582,6 +470,10 @@ class NPhotoMainWindow(QMainWindow):
             if unicode(filepath).upper().endswith(unicode(extension).upper()):
                 return True
         return False
+
+    def isVideoFile(self, filepath):
+        #TODO Implement list of accepted video extensions, and then work out what to do with them on import!
+        pass
         
     def removeDuplicates(self, paths, importFrom, albumpath):
         nonDupes = []
@@ -605,6 +497,13 @@ class NPhotoMainWindow(QMainWindow):
                     paths.append(fullpath)
         return paths
 
+    def closeEvent(self, event):
+        settings = QSettings()
+        settings.setValue("MainWindow/Size", QVariant(self.size()))
+        settings.setValue("MainWindow/Position", QVariant(self.pos()))
+        settings.setValue("MainWindow/State", QVariant(self.saveState()))
+        settings.setValue("MainWindow/Splitter", QVariant(self.mainSplitter.saveState()))
+
     def doAbout(self):
         QMessageBox.about(self, "About nPhoto",
                 "<p>nPhoto allows simple reviewing, commenting, and keywording of images, useful for running"
@@ -619,6 +518,6 @@ def doMain():
     form = NPhotoMainWindow()
     form.show()
     app.exec_()
-
+    
 if __name__ == "__main__":
     doMain()
