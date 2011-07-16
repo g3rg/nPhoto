@@ -4,12 +4,24 @@ Created on 12/07/2011
 '''
 
 from PyQt4.QtCore import SIGNAL, SLOT
-from PyQt4.QtGui import QDialog, QDialogButtonBox, QLabel, QLineEdit, QGridLayout
+from PyQt4.QtGui import QDialog, QDialogButtonBox, QLabel, QLineEdit, QGridLayout, QFrame, QVBoxLayout
+
+from fileutils import loadQPixMap
 
 
 class EditPhotoDialog(QDialog):
-    def __init__(self, parent, comment, keywords):
+    def __init__(self, parent, path, comment, keywords):
         super(EditPhotoDialog, self).__init__(parent)
+
+        controlframe = QFrame()
+        self.image = None
+        #QImage()
+        
+        self.imgLabel = QLabel()
+        #self.imgLabel.setSizePolicy(
+        self.imgLabel.setPixmap(loadQPixMap(self.image, path, 300, 300))
+        
+
         commentLabel = QLabel("Comment")
         self.commentEdit = QLineEdit(comment)
         keywordLabel = QLabel("Keyword")
@@ -27,8 +39,12 @@ class EditPhotoDialog(QDialog):
         grid.addWidget(self.keywordEdit, 1, 1)
 
         grid.addWidget(buttonBox, 2, 0, 1, 2)
-        self.setLayout(grid)
+        controlframe.setLayout(grid)
 
+        box = QVBoxLayout()
+        box.addWidget(controlframe)
+
+        self.setLayout(box)
 
 class ImportMetadataDialog(QDialog):
     def __init__(self, parent):

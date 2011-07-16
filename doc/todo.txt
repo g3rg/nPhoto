@@ -31,13 +31,13 @@
         [x] store date and orientation flag in  photo object
         [x] order photos by date/time taken
 	[x] next / prev page buttons
-        [ ] dbl-click to open in popup edit dialog
-            [ ] handle dbl-click
-            [ ] pass Photo to dialog
-            [ ] comments, keywords, ok, cancel
+        [ ] double click img to open edit screen
+            [x] pass Photo to dialog
+            [x] comments, keywords, ok, cancel
+            [x] update - save exif and format file correctly!
             [ ] show image as big as possible
-            [ ] update!
- 
+            
+        [ ] single select! 
 	[ ] multi-select
 	[ ] delete selected
 	[ ] autorotate based on EXIF data

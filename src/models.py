@@ -5,6 +5,8 @@ Created on 12/07/2011
 
 import os
 
+from constants import EXIF_TAGS
+from fileutils import loadExif
 
 class Photo():
     srcPath = None
@@ -32,14 +34,21 @@ class Photo():
         if not self.date:
             self.date = bkupDt
 
-    def buildSideCarFile(self, dest):
+    def save(self, dest):
         sidecarFilePath = dest + os.extsep + "sidecar"
         f = open(sidecarFilePath, "w")
-        f.write("originalpath=" + self.srcPath + "\n")
-        f.write("keywords=%s\n" % (" ".join(self.keywords)))
-        f.write("comment=%s\n" % (self.comment))
-        f.write("date=%s\n" % (self.date))
-        f.write("orientation=%s\n" % (self.orientation))
+        if self.srcPath:
+            f.write("originalpath=" + unicode(self.srcPath).strip() + "\n")
+        if self.path:
+            f.write("path=" + unicode(self.path).strip() + "\n")
+        if self.keywords:
+            f.write("keywords=%s\n" % (" ".join(self.keywords)))
+        if self.comment:
+            f.write("comment=%s\n" % (unicode(self.comment).strip()))
+        if self.date:
+            f.write("date=%s\n" % (self.date.strip()))
+        if self.orientation:
+            f.write("orientation=%s\n" % (self.orientation))
         f.write("exif:\n")
         if self.exif:
             for tag in self.exif.keys():
@@ -51,7 +60,7 @@ class Photo():
 
 
     @classmethod
-    def loadSideCarFile(cls, path):
+    def load(cls, path):
         ph = Photo()
         f = open(path)
         for line in f:
@@ -63,14 +72,20 @@ class Photo():
                     ph.keywords.append(keyword.strip())
             elif line.startswith("comment="):
                 ph.comment = line[len("comment="):]
+            elif line.startswith("date"):
+                ph.date = line[len("date="):]
             else:
-                if line.startswith("DateTimeOriginal="):
+                if line.startswith("DateTimeOriginal=") and not ph.date:
                     ph.date = line[len("DateTimeOriginal="):]
                 elif line.startswith("DateTime=") and not ph.date:
                     ph.date = line[len("DateTime="):]
                 elif line.startswith("Orientation="):
                     ph.orientation = line[len("Orientation"):]
-            
+        #reload EXIF from file
+        if ph.path:
+            if os.path.exists(ph.path):
+                exit = loadExif(ph.path, EXIF_TAGS)               
+        
         f.close()
         return ph
         

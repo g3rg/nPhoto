@@ -1,9 +1,13 @@
-''' Created on 02/07/2011 @author g3rg '''
+'''
+Created on 02/07/2011
+@author g3rg
+'''
 
 import os
 import sys
 import shutil
 import datetime
+import functools
 
 from PyQt4.QtCore import Qt, QTime, QTimer, QVariant, QPoint, QSize, SIGNAL, SLOT
 from PyQt4.QtGui import QApplication, QLabel, QImage, QMainWindow, QPixmap, QGridLayout, QLineEdit, \
@@ -12,16 +16,16 @@ from PyQt4.QtGui import QApplication, QLabel, QImage, QMainWindow, QPixmap, QGri
 
 from models import Photo, Album
 from dialogs import EditPhotoDialog, ImportMetadataDialog, SettingsDialog
-from fileutils import copyFileIncludingDirectories, loadExif
+from fileutils import copyFileIncludingDirectories, loadExif, loadQPixMap
 from qtutils import getSettingStr, getSettingQVar, saveSetting, addActions, createAction
+from constants import EXIF_TAGS
 
 __version__ = "0.1.0"
 
-EXIF_TAGS = ('DateTimeOriginal','ExifImageWidth','Make','Model','Orientation','DateTime','ExifImageHeight')
 BROWSER_GRID_WIDTH = 4
 BROWSER_GRID_HEIGHT = 3
 BROWSER_THUMBS_PER_PAGE = BROWSER_GRID_WIDTH * BROWSER_GRID_HEIGHT
-
+    
 class NPhotoMainWindow(QMainWindow):
     rootAlbum = None
     currentPage = 0
@@ -29,6 +33,7 @@ class NPhotoMainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(NPhotoMainWindow, self).__init__(parent)
 
+        self.image = None 
         self.status = self.statusBar()
         self.status.setSizeGripEnabled(False)
 
@@ -81,13 +86,18 @@ class NPhotoMainWindow(QMainWindow):
         for row in range(0,BROWSER_GRID_HEIGHT):
             self.imageLabels.append([])
             for col in range(0,BROWSER_GRID_WIDTH):
-                
                 self.imageLabels[row].append(QLabel())
                 self.imageLabels[row][col].setBackgroundRole(QPalette.Base)
                 self.imageLabels[row][col].setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
                 self.imageLabels[row][col].setScaledContents = True
                 self.imageLabels[row][col].setAlignment(Qt.AlignCenter)
+                self.imageLabels[row][col].setStyleSheet("border:2px solid #000")
 
+                dbl = functools.partial(self.imgDoubleClick, row, col)
+                click = functools.partial(self.imgMouseRelease, row, col)
+                
+                self.imageLabels[row][col].mouseDoubleClickEvent = dbl
+                self.imageLabels[row][col].mouseReleaseEvent = click
                 self.browserGrid.addWidget(self.imageLabels[row][col],row,col)
 
         self.prevPage = QPushButton("Prev")
@@ -117,6 +127,29 @@ class NPhotoMainWindow(QMainWindow):
             QTimer.singleShot(0, self.loadLibrary)
         else:
             self.status.showMessage("No Library Path in settings", 10000)
+
+    def getPhotoByBrowserLocation(self, row, col):
+        idx = ((self.currentPage - 1) * BROWSER_THUMBS_PER_PAGE) + (row * BROWSER_GRID_WIDTH) + col
+        return self.currentAlbum.photos[idx]
+
+    def imgDoubleClick(self, row, col, event):
+
+        if event.button() == Qt.LeftButton:
+            if event.modifiers() & Qt.ControlModifier or event.modifiers() & Qt.AltModifier \
+                    or event.modifiers() & Qt.ShiftModifier:
+                pass
+            else:
+                self.currentSelection = [self.getPhotoByBrowserLocation(row,col),]
+                self.doEdit()        
+
+    def imgMouseRelease(self, row, col, event):
+        if event.button() == Qt.LeftButton:
+            if event.modifiers() & Qt.ControlModifier or event.modifiers() & Qt.AltModifier \
+                or event.modifiers() & Qt.ShiftModifier:
+                pass
+            else:                
+                print "Mouse Released"
+                #TODO Add or remove current image from self.currentSelection
 
     def doRescan(self):
         pass
@@ -148,9 +181,9 @@ class NPhotoMainWindow(QMainWindow):
                 if len(self.currentAlbum.photos)<= (row*BROWSER_GRID_WIDTH + col):
                     self.imageLabels[row][col].setPixmap(QPixmap())
                 else:
-                    self.imageLabels[row][col].setPixmap(self.loadQPixMap(self.currentAlbum.photos[
+                    self.imageLabels[row][col].setPixmap(loadQPixMap(self.image, self.currentAlbum.photos[
                             (BROWSER_THUMBS_PER_PAGE * (self.currentPage - 1)) + row*BROWSER_GRID_WIDTH+col]
-                                                                          .path))
+                                                                          .path, self.imageLabels[0][0].width(), self.imageLabels[0][0].height()))
                     self.imageLabels[row][col].adjustSize()
 
         self.updatePageInfo()
@@ -162,9 +195,9 @@ class NPhotoMainWindow(QMainWindow):
                             (BROWSER_THUMBS_PER_PAGE * (self.currentPage - 1)) + row*BROWSER_GRID_WIDTH + col):
                     self.imageLabels[row][col].setPixmap(QPixmap())
                 else:
-                    self.imageLabels[row][col].setPixmap(self.loadQPixMap(self.currentAlbum.photos[
+                    self.imageLabels[row][col].setPixmap(self.loadQPixMap(self.image, self.currentAlbum.photos[
                             (BROWSER_THUMBS_PER_PAGE * (self.currentPage - 1)) + row*BROWSER_GRID_WIDTH+col]
-                                                                          .path))
+                                                                          .path, self.imageLabels[0][0].width(), self.imageLabels[0][0].height()))
                     self.imageLabels[row][col].adjustSize()
 
 
@@ -238,11 +271,16 @@ class NPhotoMainWindow(QMainWindow):
 
 
     def doEdit(self):
-        comment = "No Comment"
-        keywords = "one two three"
-        dialog = EditPhotoDialog(self, comment, keywords)
-        if dialog.exec_():
-            print "Editing!"
+        if hasattr(self, "currentSelection"):
+            if len(self.currentSelection) == 1:
+                ph = self.currentSelection[0]
+                comment = ph.comment
+                keywords = (" ".join(ph.keywords)).strip()
+                dialog = EditPhotoDialog(self, ph.path, comment, keywords)
+                if dialog.exec_():
+                    ph.comment = unicode(dialog.commentEdit.text()).strip()
+                    ph.keywords = unicode(dialog.keywordEdit.text()).strip().split(" ")
+                    ph.save(ph.path)
 
     def doSettings(self):
         libPath = getSettingStr("Paths/Library", "")
@@ -308,15 +346,16 @@ class NPhotoMainWindow(QMainWindow):
                 if self.isImageFile(path + os.sep + fl):
                     ph = None
                     if os.path.exists(path + os.sep + fl + ".sidecar"):
-                        ph = Photo.loadSideCarFile(path + os.sep + fl + ".sidecar")
+                        ph = Photo.load(path + os.sep + fl + ".sidecar")
                     else:
                         ph = Photo()
                         ph.comment = ""
                         ph.keywords = {}
                         ph.srcPath = None
+                        ph.path = path + os.sep + fl
                         exif = loadExif(path + os.sep + fl, EXIF_TAGS)
                         ph.setExif(exif)
-                        ph.buildSideCarFile(dest)
+                        ph.save(path + os.sep + fl)
 
                     ph.path = path + os.sep + fl
                     tmpPhotos.append(ph)
@@ -324,39 +363,22 @@ class NPhotoMainWindow(QMainWindow):
         album.photos = sorted(tmpPhotos, key = lambda photo: photo.date)
         return album
 
-    def loadQPixMap(self, fname):
-        qpx = None
-        message = ""
-        if fname:
-            self.image = QImage(fname)
-            if self.image.isNull():
-                message = "Failed to read %s" % fname
-            else:
-                width = self.imageLabels[0][0].width()
-                height = self.imageLabels[0][0].height()
-                image = self.image.scaled(width, height, Qt.KeepAspectRatio)
-                qpx = QPixmap(QPixmap.fromImage(image))
-                message = "Loaded %s" % fname
-
-        self.status.showMessage(message, 10000)
-        return qpx
-
-    def loadFile(self, fname):
-        if fname:
-            self.image = QImage(fname)
-            if self.image.isNull():
-                message = "Failed to read %s" % fname
-            else:
-                width = self.image.width()
-                height = self.image.height()
-                image = self.image.scaled(width, height, Qt.KeepAspectRatio)
-                for row in range(0,len(self.imageLabels)):
-                    for col in range(0,len(self.imageLabels[row])):
-                        self.imageLabels[row][col].setPixmap(QPixmap.fromImage(image))
-                        
-                message = "Loaded %s" % fname
-
-            self.status.showMessage(message, 10000)
+##    def loadFile(self, fname):
+##        if fname:
+##            self.image = QImage(fname)
+##            if self.image.isNull():
+##                message = "Failed to read %s" % fname
+##            else:
+##                width = self.image.width()
+##                height = self.image.height()
+##                image = self.image.scaled(width, height, Qt.KeepAspectRatio)
+##                for row in range(0,len(self.imageLabels)):
+##                    for col in range(0,len(self.imageLabels[row])):
+##                        self.imageLabels[row][col].setPixmap(QPixmap.fromImage(image))
+##                        
+##                message = "Loaded %s" % fname
+##
+##            self.status.showMessage(message, 10000)
 
 
     def doImport(self):
@@ -431,12 +453,13 @@ class NPhotoMainWindow(QMainWindow):
                     if self.isImageFile(path):
                         exif = loadExif(unicode(path), EXIF_TAGS)
                         ph = Photo()
+                        ph.path = dest
                         ph.srcPath = path
                         ph.comment = comments
                         ph.keywords = keywords
                         ph.setExif(exif)
 
-                        ph.buildSideCarFile(dest)
+                        ph.save(dest)
                         
                 QMessageBox.information(self, "Import", "Import completed")
 

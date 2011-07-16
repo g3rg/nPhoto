@@ -9,6 +9,9 @@ import os
 import Image
 import ExifTags
 
+from PyQt4.QtCore import Qt
+from PyQt4.QtGui import QImage, QPixmap
+
 def copyFileIncludingDirectories(src, dest):
     dirs = dest.split(os.sep)
     dirs = dirs[0:len(dirs)-1]
@@ -31,3 +34,20 @@ def loadExif(path, exifTags):
             tags[decoded] = unicode(value)
 
     return tags
+
+def loadQPixMap(image, fname, width, height):
+    qpx = None
+    message = ""
+    if fname:
+        image = QImage(fname)
+        if image.isNull():
+            message = "Failed to read %s" % fname
+        else:
+            #width = self.imageLabels[0][0].width()
+            #height = self.imageLabels[0][0].height()
+            img = image.scaled(width, height, Qt.KeepAspectRatio)
+            qpx = QPixmap(QPixmap.fromImage(image))
+            message = "Loaded %s" % fname
+
+    #self.status.showMessage(message, 10000)
+    return qpx
