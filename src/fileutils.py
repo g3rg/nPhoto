@@ -46,7 +46,7 @@ def loadQPixMap(image, fname, width, height):
             #width = self.imageLabels[0][0].width()
             #height = self.imageLabels[0][0].height()
             img = image.scaled(width, height, Qt.KeepAspectRatio)
-            qpx = QPixmap(QPixmap.fromImage(image))
+            qpx = QPixmap(QPixmap.fromImage(img))
             message = "Loaded %s" % fname
 
     #self.status.showMessage(message, 10000)

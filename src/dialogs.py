@@ -3,8 +3,8 @@ Created on 12/07/2011
 @author g3rg
 '''
 
-from PyQt4.QtCore import SIGNAL, SLOT
-from PyQt4.QtGui import QDialog, QDialogButtonBox, QLabel, QLineEdit, QGridLayout, QFrame, QVBoxLayout
+from PyQt4.QtCore import Qt, SIGNAL, SLOT
+from PyQt4.QtGui import QDialog, QDialogButtonBox, QLabel, QLineEdit, QGridLayout, QFrame, QVBoxLayout, QSizePolicy
 
 from fileutils import loadQPixMap
 
@@ -18,10 +18,11 @@ class EditPhotoDialog(QDialog):
         #QImage()
         
         self.imgLabel = QLabel()
-        #self.imgLabel.setSizePolicy(
-        self.imgLabel.setPixmap(loadQPixMap(self.image, path, 300, 300))
+        self.imgLabel.setPixmap(loadQPixMap(self.image, path, self.imgLabel.width(), self.imgLabel.height()))
+        self.imgLabel.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        #self.imgLabel.setScaledContents = True
+        self.imgLabel.setAlignment(Qt.AlignCenter)
         
-
         commentLabel = QLabel("Comment")
         self.commentEdit = QLineEdit(comment)
         keywordLabel = QLabel("Keyword")
@@ -42,6 +43,8 @@ class EditPhotoDialog(QDialog):
         controlframe.setLayout(grid)
 
         box = QVBoxLayout()
+        
+        box.addWidget(self.imgLabel)
         box.addWidget(controlframe)
 
         self.setLayout(box)

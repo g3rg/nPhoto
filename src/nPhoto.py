@@ -148,7 +148,7 @@ class NPhotoMainWindow(QMainWindow):
                 or event.modifiers() & Qt.ShiftModifier:
                 pass
             else:                
-                print "Mouse Released"
+                pass
                 #TODO Add or remove current image from self.currentSelection
 
     def doRescan(self):
