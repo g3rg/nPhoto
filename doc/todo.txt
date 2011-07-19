@@ -31,35 +31,41 @@
         [x] store date and orientation flag in  photo object
         [x] order photos by date/time taken
 	[x] next / prev page buttons
-        [ ] double click img to open edit screen
+        [x] double click img to open edit screen
             [x] pass Photo to dialog
             [x] comments, keywords, ok, cancel
             [x] update - save exif and format file correctly!
-            [ ] show image as big as possible
+            [x] show image as big as possible
             
-        [ ] single select! 
-	[ ] multi-select
+        [x] single select
+	[x] multi-select
+        [x] show selected
 	[ ] delete selected
+        [ ] toolbar buttons!
 	[ ] autorotate based on EXIF data
 
 [ ] Compare View - select 2 photos and compare, allow deleting from here!
  
 [ ] Review 		
-	[ ] View individual photo
+	[x] View individual photo
 		[ ] autorotate based on EXIF data,
 		[ ] next / prev image
 		[ ] delete
-		[ ] edit keywords - sidecar
-		[ ] edit comment - sidecar
+		[x] edit keywords - sidecar
+		[x] edit comment - sidecar
 
 [ ] Tree control by date of photo
     [ ] drop down to select between album or date view
 
-[ ] replace browser image loading with thumbnail from within jpeg?
+[ ] replace browser image loading with thumbnail from within jpeg / cache of thumbs?
 [ ] searching! - build XML library? sqllite?    
-[ ] read EXIF on import
+[x] read EXIF on import
 [ ] IPTC keywords
 [ ] JPEG comments
-[ ] RAW sidecar files?
-[ ] display EXIF
-[ ] video files!
+[ ] Display RAW files?
+    [ ] RAW sidecar files
+[ ] display EXIF - popup?
+[ ] video files
+     [ ] Copy on import
+     [ ] backup
+[ ] 

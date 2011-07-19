@@ -12,10 +12,8 @@ from fileutils import loadQPixMap
 class EditPhotoDialog(QDialog):
     def __init__(self, parent, path, comment, keywords):
         super(EditPhotoDialog, self).__init__(parent)
-
         controlframe = QFrame()
         self.image = None
-        #QImage()
         
         self.imgLabel = QLabel()
         self.imgLabel.setPixmap(loadQPixMap(self.image, path, self.imgLabel.width(), self.imgLabel.height()))

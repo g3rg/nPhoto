@@ -39,6 +39,7 @@ class NPhotoMainWindow(QMainWindow):
 
         fileMenu = self.menuBar().addMenu("&File")
         fileEditAction = createAction(self, "&Edit", self.doEdit, "Ctrl-E", "fileedit", "Edit photo details")
+        fileDeleteAction = createAction(self, "&Delete", self.doDelete, "Ctrl-D", "filedelete", "Delete selected file(s)")
         fileImportAction = createAction(self, "&Import", self.doImport, "Ctrl-I", "fileimport", "Import photos into your library")
         fileRescanLibraryAction = createAction(self, "&Rescan", self.doRescan, "Ctrl-R", "filerescan", "Rescan library folder and update sidecar files")
         fileBackupAction = createAction(self, "&Backup", self.doBackup, "Ctrl-B", "filebkup", "Backup your library")
@@ -48,8 +49,8 @@ class NPhotoMainWindow(QMainWindow):
         helpMenu = self.menuBar().addMenu("&Help")
         helpAboutAction = createAction(self, "&About", self.doAbout, None, "helpabout", "About nPhoto")
         
-        addActions(fileMenu, (fileEditAction, fileImportAction, fileRescanLibraryAction, fileBackupAction,
-                                       fileSettingsAction, None, fileQuitAction))
+        addActions(fileMenu, (fileEditAction, fileDeleteAction, None, fileImportAction, fileRescanLibraryAction,
+                              fileBackupAction, fileSettingsAction, None, fileQuitAction))
         addActions(helpMenu, (helpAboutAction,))
     
         size = getSettingQVar("MainWindow/Size", QSize(600,500)).toSize()
@@ -130,7 +131,10 @@ class NPhotoMainWindow(QMainWindow):
 
     def getPhotoByBrowserLocation(self, row, col):
         idx = ((self.currentPage - 1) * BROWSER_THUMBS_PER_PAGE) + (row * BROWSER_GRID_WIDTH) + col
-        return self.currentAlbum.photos[idx]
+        if idx < len(self.currentAlbum.photos):
+            return self.currentAlbum.photos[idx]
+        else:
+            return None
 
     def imgDoubleClick(self, row, col, event):
 
@@ -139,18 +143,42 @@ class NPhotoMainWindow(QMainWindow):
                     or event.modifiers() & Qt.ShiftModifier:
                 pass
             else:
-                self.currentSelection = [self.getPhotoByBrowserLocation(row,col),]
-                self.doEdit()        
+                curr = self.getPhotoByBrowserLocation(row,col)
+                if curr:
+                    self.currentSelection = [curr,]
+                    self.highlightSelected()
+                    self.doEdit()        
 
     def imgMouseRelease(self, row, col, event):
         if event.button() == Qt.LeftButton:
             if event.modifiers() & Qt.ControlModifier or event.modifiers() & Qt.AltModifier \
                 or event.modifiers() & Qt.ShiftModifier:
                 pass
-            else:                
-                pass
-                #TODO Add or remove current image from self.currentSelection
+            else:
+                curr = self.getPhotoByBrowserLocation(row,col)
+                if curr:
+                    if not hasattr(self, "currentSelection"):
+                        self.currentSelection = []
 
+                    if curr in self.currentSelection:
+                        self.currentSelection.remove(curr)
+                    else:
+                        self.currentSelection.append(curr)
+
+        self.highlightSelected()
+
+    def highlightSelected(self):
+        if hasattr(self, "currentSelection"):
+            for x in range(0, BROWSER_GRID_HEIGHT):
+                for y in range(0, BROWSER_GRID_WIDTH):
+                    ph = self.getPhotoByBrowserLocation(x,y)
+                    if ph:
+                        if ph in self.currentSelection:
+                            self.imageLabels[x][y].setStyleSheet("border:2px solid #FFF")
+                        else:
+                            self.imageLabels[x][y].setStyleSheet("border:2px solid #000")
+
+        
     def doRescan(self):
         pass
 
@@ -195,7 +223,7 @@ class NPhotoMainWindow(QMainWindow):
                             (BROWSER_THUMBS_PER_PAGE * (self.currentPage - 1)) + row*BROWSER_GRID_WIDTH + col):
                     self.imageLabels[row][col].setPixmap(QPixmap())
                 else:
-                    self.imageLabels[row][col].setPixmap(self.loadQPixMap(self.image, self.currentAlbum.photos[
+                    self.imageLabels[row][col].setPixmap(loadQPixMap(self.image, self.currentAlbum.photos[
                             (BROWSER_THUMBS_PER_PAGE * (self.currentPage - 1)) + row*BROWSER_GRID_WIDTH+col]
                                                                           .path, self.imageLabels[0][0].width(), self.imageLabels[0][0].height()))
                     self.imageLabels[row][col].adjustSize()
@@ -268,6 +296,19 @@ class NPhotoMainWindow(QMainWindow):
             shutil.copytree(libDir, path.strip() + os.sep + bkupDirName)
         
         QMessageBox.information(self, "Backup", "Backup completed!")
+
+    def doDelete(self):
+        if hasattr(self, "currentSelection"):
+            if len(self.currentSelection) > 0:
+                msg = "Are you sure you want to delete the selected image?"
+                if len(self.currentSelection) > 1:
+                    msg = "Are you sure you want to delete the %s selected images?" % len(self.currentSelection)
+                    
+                if QMessageBox.warning(self, "Delete Image(s)", msg,
+                                             QMessageBox.Yes|QMessageBox.No) == QMessageBox.Yes:
+                    for ph in self.currentSelection:
+                        ph.delete()
+
 
 
     def doEdit(self):

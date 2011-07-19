@@ -17,6 +17,9 @@ class Photo():
     keywords = []
     exif = None
 
+    def __init__(self):
+        self.keywords = []
+
     def setExif(self, exif):
         self.exif = exif
 
@@ -58,6 +61,8 @@ class Photo():
                 f.write("\n")
         f.close()
 
+    def delete(self):
+        print "DELETING %s, %s" % (self.path, self.path + ".sidecar")
 
     @classmethod
     def load(cls, path):
@@ -81,7 +86,7 @@ class Photo():
                     ph.date = line[len("DateTime="):]
                 elif line.startswith("Orientation="):
                     ph.orientation = line[len("Orientation"):]
-        #reload EXIF from file
+
         if ph.path:
             if os.path.exists(ph.path):
                 exit = loadExif(ph.path, EXIF_TAGS)               
