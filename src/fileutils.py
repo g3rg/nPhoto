@@ -5,6 +5,7 @@ Created on 12/07/2011
 
 import shutil
 import os
+import sys
 
 import Image
 import ExifTags
@@ -35,19 +36,42 @@ def loadExif(path, exifTags):
 
     return tags
 
-def loadQPixMap(image, fname, width, height):
+def loadQPixMap(image, fname, width, height, thumb=False):
     qpx = None
     message = ""
     if fname:
-        image = QImage(fname)
-        if image.isNull():
-            message = "Failed to read %s" % fname
-        else:
-            #width = self.imageLabels[0][0].width()
-            #height = self.imageLabels[0][0].height()
-            img = image.scaled(width, height, Qt.KeepAspectRatio)
-            qpx = QPixmap(QPixmap.fromImage(img))
-            message = "Loaded %s" % fname
+        if os.path.exists(fname):
+            path = fname
+            if thumb:
+                if os.path.exists(os.path.splitext(fname)[0] + ".thumbnail"):
+                    path = os.path.splitext(fname)[0] + ".thumbnail"
+                    
+            image = QImage(path)
+            if image.isNull():
+                message = "Failed to read %s" % path
+            else:
+                #width = self.imageLabels[0][0].width()
+                #height = self.imageLabels[0][0].height()
+                img = image.scaled(width, height, Qt.KeepAspectRatio)
+                qpx = QPixmap(QPixmap.fromImage(img))
+                message = "Loaded %s" % fname
 
     #self.status.showMessage(message, 10000)
     return qpx
+
+
+def createThumbnail(infile, overwrite=False, width=256, height=256):
+    size = width, height
+    
+    outfile = os.path.splitext(infile)[0] + ".thumbnail"
+    if infile != outfile:
+        try:
+            if overwrite:
+                if os.path.exists(outfile):
+                    os.remove(outfile)
+                    
+            im = Image.open(infile)
+            im.thumbnail(size)
+            im.save(outfile, "JPEG")
+        except IOError:
+            print "cannot create thumbnail for", infile

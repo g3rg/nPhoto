@@ -44,6 +44,7 @@
         [x] remember which page you were on and return there after delete
         [ ] toolbar buttons!
 	[ ] autorotate based on EXIF data
+             [ ] including thumbnail!
         [ ] jump to specific page in browser
 
 [ ] Review 		
@@ -60,9 +61,7 @@
 [ ] Tree control by date of photo
     [ ] drop down to select between album or date view
 
-[ ] replace browser image loading with thumbnail from within jpeg / cache of thumbs?
 [ ] searching! - build XML library? sqllite?    
-[x] read EXIF on import
 [ ] IPTC keywords
 [ ] JPEG comments
 [ ] Display RAW files?

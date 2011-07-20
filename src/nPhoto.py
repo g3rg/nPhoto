@@ -16,7 +16,7 @@ from PyQt4.QtGui import QApplication, QLabel, QImage, QMainWindow, QPixmap, QGri
 
 from models import Photo, Album
 from dialogs import EditPhotoDialog, ImportMetadataDialog, SettingsDialog
-from fileutils import copyFileIncludingDirectories, loadExif, loadQPixMap
+from fileutils import copyFileIncludingDirectories, loadExif, loadQPixMap, createThumbnail
 from qtutils import getSettingStr, getSettingQVar, saveSetting, addActions, createAction
 from constants import EXIF_TAGS
 
@@ -41,7 +41,7 @@ class NPhotoMainWindow(QMainWindow):
         fileEditAction = createAction(self, "&Edit", self.doEdit, "Ctrl-E", "fileedit", "Edit photo details")
         fileDeleteAction = createAction(self, "&Delete", self.doDelete, "Ctrl-D", "filedelete", "Delete selected file(s)")
         fileImportAction = createAction(self, "&Import", self.doImport, "Ctrl-I", "fileimport", "Import photos into your library")
-        fileRescanLibraryAction = createAction(self, "&Rescan", self.doRescan, "Ctrl-R", "filerescan", "Rescan library folder and update sidecar files")
+        fileRescanLibraryAction = createAction(self, "&Rescan", self.doRescan, "Ctrl-R", "filerescan", "Rescan library folder and update sidecar files, and thumbnails")
         fileBackupAction = createAction(self, "&Backup", self.doBackup, "Ctrl-B", "filebkup", "Backup your library")
         fileSettingsAction = createAction(self, "&Settings", self.doSettings, "Ctrl-S", "filesettings", "Settings")
         fileQuitAction = createAction(self, "&Quit", self.close, "Ctrl+Q", "filequit", "Close the application")
@@ -178,9 +178,22 @@ class NPhotoMainWindow(QMainWindow):
                         else:
                             self.imageLabels[x][y].setStyleSheet("border:2px solid #000")
 
+
+
+    def regenAlbumThumbnails(self, album):
+        for al in album.albums:
+            self.regenAlbumThumbnails(al)
+
+        for ph in album.photos:
+            createThumbnail(ph.path, True)
         
     def doRescan(self):
-        pass
+        #TODO Rebuild sidecar files!
+
+        self.regenAlbumThumbnails(self.rootAlbum)
+        self.reloadLibrary()
+
+        
 
     def treeSelection(self):
         curr = self.tree.currentItem()
@@ -211,7 +224,7 @@ class NPhotoMainWindow(QMainWindow):
                 else:
                     self.imageLabels[row][col].setPixmap(loadQPixMap(self.image, self.currentAlbum.photos[
                             (BROWSER_THUMBS_PER_PAGE * (self.currentPage - 1)) + row*BROWSER_GRID_WIDTH+col]
-                                                                          .path, self.imageLabels[0][0].width(), self.imageLabels[0][0].height()))
+                                                                          .path, self.imageLabels[0][0].width(), self.imageLabels[0][0].height(), True))
                     self.imageLabels[row][col].adjustSize()
 
         self.updatePageInfo()
@@ -225,7 +238,7 @@ class NPhotoMainWindow(QMainWindow):
                 else:
                     self.imageLabels[row][col].setPixmap(loadQPixMap(self.image, self.currentAlbum.photos[
                             (BROWSER_THUMBS_PER_PAGE * (self.currentPage - 1)) + row*BROWSER_GRID_WIDTH+col]
-                                                                          .path, self.imageLabels[0][0].width(), self.imageLabels[0][0].height()))
+                                                                          .path, self.imageLabels[0][0].width(), self.imageLabels[0][0].height(), True))
                     self.imageLabels[row][col].adjustSize()
 
 
@@ -312,19 +325,24 @@ class NPhotoMainWindow(QMainWindow):
                             QMessageBox.warning(self, "Error while deleting", msg)
                             break
 
-                    self.currentSelection = []
-                    self.highlightSelected()
+                    self.reloadLibrary()
                     
-                    currPage = self.currentPage
 
-                    self.loadLibrary()
-                    if currPage > self.getMaxPage():
-                        #Assumes you can't delete more than one page worth of photos at a time
-                        currPage = self.getMaxPage()
+    def reloadLibrary(self):
+        self.currentSelection = []
+        self.highlightSelected()
+        
+        currPage = self.currentPage
 
-                    self.currentPage = currPage
-                    self.loadPageThumbs()
-                    self.updatePageInfo()
+        self.loadLibrary()
+        if currPage > self.getMaxPage():
+            #Assumes you can't delete more than one page worth of photos at a time
+            currPage = self.getMaxPage()
+
+        self.currentPage = currPage
+        self.loadPageThumbs()
+        self.updatePageInfo()
+
 
     def doEdit(self):
         if hasattr(self, "currentSelection"):
@@ -419,24 +437,6 @@ class NPhotoMainWindow(QMainWindow):
         album.photos = sorted(tmpPhotos, key = lambda photo: photo.date)
         return album
 
-##    def loadFile(self, fname):
-##        if fname:
-##            self.image = QImage(fname)
-##            if self.image.isNull():
-##                message = "Failed to read %s" % fname
-##            else:
-##                width = self.image.width()
-##                height = self.image.height()
-##                image = self.image.scaled(width, height, Qt.KeepAspectRatio)
-##                for row in range(0,len(self.imageLabels)):
-##                    for col in range(0,len(self.imageLabels[row])):
-##                        self.imageLabels[row][col].setPixmap(QPixmap.fromImage(image))
-##                        
-##                message = "Loaded %s" % fname
-##
-##            self.status.showMessage(message, 10000)
-
-
     def doImport(self):
         libPath = getSettingStr("Paths/Library")
         fileExt = getSettingStr("FileExtensions")
@@ -514,8 +514,10 @@ class NPhotoMainWindow(QMainWindow):
                         ph.comment = comments
                         ph.keywords = keywords
                         ph.setExif(exif)
-
                         ph.save(dest)
+
+                        #Create Thumbnail
+                        createThumbnail(unicode(ph.path))
                         
                 QMessageBox.information(self, "Import", "Import completed")
 

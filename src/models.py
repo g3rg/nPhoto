@@ -105,7 +105,8 @@ class Photo():
 
         if ph.path:
             if os.path.exists(ph.path):
-                exit = loadExif(ph.path, EXIF_TAGS)               
+                exif = loadExif(ph.path, EXIF_TAGS)
+                ph.setExif(exif)
         
         f.close()
         return ph
