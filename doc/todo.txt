@@ -42,26 +42,24 @@
         [x] show selected
 	[x] delete selected
         [x] remember which page you were on and return there after delete
-        [ ] toolbar buttons!
-	[ ] autorotate based on EXIF data
-             [ ] including thumbnail!
+	[ ] setting and functionality to rotate thumbnails?
         [ ] jump to specific page in browser
+        [ ] toolbar buttons!
 
 [ ] Review 		
 	[x] View individual photo
 		[x] edit keywords - sidecar
 		[x] edit comment - sidecar
-		[ ] setting to autorotate based on EXIF data or not!
-		[ ] next / prev image (including preload full images in background?)
-		[ ] delete
+		[ ] next / prev image
+                     [ ] including preload full images in background
+        [ ] zoom (slider and scroll area?)
 
-[ ] Compare View - select 2 photos and compare, allow deleting from here!
-
+[ ] Compare View - select 2,3 or 4 photos and compare, allow deleting
 
 [ ] Tree control by date of photo
     [ ] drop down to select between album or date view
 
-[ ] searching! - build XML library? sqllite?    
+[ ] searching! - build XML library? sqllite?
 [ ] IPTC keywords
 [ ] JPEG comments
 [ ] Display RAW files?

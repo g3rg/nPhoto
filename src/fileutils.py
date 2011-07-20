@@ -59,6 +59,9 @@ def loadQPixMap(image, fname, width, height, thumb=False):
     #self.status.showMessage(message, 10000)
     return qpx
 
+def processRotate(image, orientation):
+    #TODO Process the rotate... do we actually want to do this? Or is it better for small screen to keep them all the same
+    return image
 
 def createThumbnail(infile, overwrite=False, width=256, height=256):
     size = width, height
@@ -71,6 +74,10 @@ def createThumbnail(infile, overwrite=False, width=256, height=256):
                     os.remove(outfile)
                     
             im = Image.open(infile)
+            exif = loadExif(infile)
+            if exif['orientation']:
+                im = processRotate(im, exif['orientation'])
+                
             im.thumbnail(size)
             im.save(outfile, "JPEG")
         except IOError:

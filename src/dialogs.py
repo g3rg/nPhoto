@@ -16,8 +16,9 @@ class EditPhotoDialog(QDialog):
         self.image = None
         
         self.imgLabel = QLabel()
-        self.imgLabel.setPixmap(loadQPixMap(self.image, path, self.imgLabel.width(), self.imgLabel.height()))
-        self.imgLabel.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        #75 is a magic hack number for my netbook to get the buttons showing on the dlg box as well!
+        self.imgLabel.setPixmap(loadQPixMap(self.image, path, self.imgLabel.width()-75, self.imgLabel.height()-75))
+        self.imgLabel.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         #self.imgLabel.setScaledContents = True
         self.imgLabel.setAlignment(Qt.AlignCenter)
         
