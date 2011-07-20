@@ -307,9 +307,24 @@ class NPhotoMainWindow(QMainWindow):
                 if QMessageBox.warning(self, "Delete Image(s)", msg,
                                              QMessageBox.Yes|QMessageBox.No) == QMessageBox.Yes:
                     for ph in self.currentSelection:
-                        ph.delete()
+                        msg = ph.delete()
+                        if msg not in (None, ''):
+                            QMessageBox.warning(self, "Error while deleting", msg)
+                            break
 
+                    self.currentSelection = []
+                    self.highlightSelected()
+                    
+                    currPage = self.currentPage
 
+                    self.loadLibrary()
+                    if currPage > self.getMaxPage():
+                        #Assumes you can't delete more than one page worth of photos at a time
+                        currPage = self.getMaxPage()
+
+                    self.currentPage = currPage
+                    self.loadPageThumbs()
+                    self.updatePageInfo()
 
     def doEdit(self):
         if hasattr(self, "currentSelection"):

@@ -4,6 +4,7 @@ Created on 12/07/2011
 '''
 
 import os
+import sys
 
 from constants import EXIF_TAGS
 from fileutils import loadExif
@@ -62,8 +63,23 @@ class Photo():
         f.close()
 
     def delete(self):
-        print "DELETING %s, %s" % (self.path, self.path + ".sidecar")
+        if self.path:
+            path = self.path
+            try:
+                os.remove(path)
+            except: 
+                return "Error deleting image file: %s" % sys.exc_info()[0]
 
+            path = path + ".sidecar"
+            try:
+                os.remove(path)
+            except: 
+                print "Error deleting sidecar file: %s" % sys.exc_info()[0]            
+            
+            
+        else:
+            return "No path in photo"
+        
     @classmethod
     def load(cls, path):
         ph = Photo()

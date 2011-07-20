@@ -40,19 +40,22 @@
         [x] single select
 	[x] multi-select
         [x] show selected
-	[ ] delete selected
+	[x] delete selected
+        [x] remember which page you were on and return there after delete
         [ ] toolbar buttons!
 	[ ] autorotate based on EXIF data
+        [ ] jump to specific page in browser
 
-[ ] Compare View - select 2 photos and compare, allow deleting from here!
- 
 [ ] Review 		
 	[x] View individual photo
-		[ ] autorotate based on EXIF data,
-		[ ] next / prev image
-		[ ] delete
 		[x] edit keywords - sidecar
 		[x] edit comment - sidecar
+		[ ] setting to autorotate based on EXIF data or not!
+		[ ] next / prev image (including preload full images in background?)
+		[ ] delete
+
+[ ] Compare View - select 2 photos and compare, allow deleting from here!
+
 
 [ ] Tree control by date of photo
     [ ] drop down to select between album or date view
